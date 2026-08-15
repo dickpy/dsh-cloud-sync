@@ -1,103 +1,80 @@
 # DSH Cloud Sync
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.18.2-blue)](package.json)
-[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
+`@dsh-local/dsh-cloud-sync` is a DeepSeek Harness bundle for portable profile recovery. It synchronizes small, reproducible profile files to WebDAV rather than copying `node_modules`, then lets DSH/pnpm rebuild packages on the target computer.
 
-**DSH Cloud Sync** 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh)（DSH）的官方 bundle 插件，用于**可移植的配置文件与本地插件源码同步**。它只同步小而可复现的配置文件到 WebDAV，而不是复制 `node_modules`，目标电脑上由 DSH / pnpm 自动重建依赖。
+## Included in a profile snapshot
 
-> `@dsh-local/dsh-cloud-sync` · 支持 WebDAV · 客户端加密（AES-256-GCM）· 快照历史与回滚
+- `package.json`, `pnpm-lock.yaml`, `.npmrc`, and `pnpm-workspace.yaml`
+- `cordis.patch.yml`, `cordis.yml`, and marketplace hot-update YAML files
+- Local-plugin source archives automatically captured from reachable `file:` and `link:` dependencies during Sync
 
----
+It never copies sessions, attachments, pnpm cache, `node_modules`, or credentials. WebDAV credentials never enter a snapshot. On Windows the remembered app password is protected with DPAPI for the current user; on other platforms it is stored in a separate owner-only (`0600`) local credentials file. `settings.json` never contains the password.
 
-## 功能亮点
+## Install
 
-- 📦 **轻量同步** — 只同步 `package.json`、`pnpm-lock.yaml`、`.npmrc`、`pnpm-workspace.yaml`、`cordis.patch.yml`、`cordis.yml` 及市场热更新 YAML；绝不复制会话、附件、pnpm 缓存、`node_modules` 或凭据。
-- 🔗 **本地插件源码自动归档** — 同步时自动捕获所有可达的 `file:` / `link:` 依赖源码，并剥离旧驱动器路径。
-- 🔒 **客户端加密** — 可选 AES-256-GCM 加密，每次加密对象携带全新 KDF salt，口令与派生密钥绝不落盘。
-- 🕘 **快照历史与回滚** — 每次成功同步记录历史（保留最近 30 条），支持一键回滚。
-- 🔀 **三种同步策略** — 智能合并（默认，冲突时询问）、云端优先、本地优先。
-- 🧩 **插件生命周期管理** — 面板直接从同步的 profile 派生插件列表，支持远程插件安装 / 卸载。
-- 🔄 **自动同步** — 设备名 + 5 分钟 ~ 24 小时间隔自动同步；仅在检测到变化时运行。
-- 🆕 **自更新** — 通过私有 WebDAV 目标分发自身 `.tgz`，SHA-256 校验后显式更新。
-
-## 快速开始
-
-### 安装
-
-将本文件夹拷贝到目标电脑，然后运行：
+Copy this folder to the target computer, then run:
 
 ```powershell
 dsh plugin --profile web add .
 ```
 
-重启 DSH，打开 **设置**，在左侧导航中选择 **云同步**。
+Restart DSH, open Settings, then choose Cloud Sync in the left navigation.
 
-### 首次备份
+## First backup
 
-1. 点击 **连接**，输入 WebDAV 端点、账号邮箱与应用密码（坚果云请在账号安全设置中创建应用密码）。首次同步会自动创建端点目录。
-2. 保存连接，profile 即配置为仅 WebDAV 同步。
-3. 点击 **同步**，自动归档每个可达的本地源码插件。`.dshsyncignore` 可额外排除文件或目录名。
+1. Select **Connect** and enter a WebDAV endpoint, account email, and app password. For Nutstore, create the app password under account security settings. A new endpoint directory is created on the first sync.
+2. Save the connection. The profile is now configured for WebDAV-only sync.
+3. Select **Sync**. It automatically archives every reachable local source plugin without retaining its old drive path. `.dshsyncignore` can exclude additional file or directory names.
 
-### 在新设备恢复
+On a new device, install this one Sync bundle and configure the same target. The **Sync status** tab lists the remote plugins and their local installation state. Install missing plugins there, or choose **Preview restore** then **Apply restore** for a complete profile recovery. Restore writes profile files only; it deliberately defers dependency installation until DSH is fully restarted. Local plugin sources are restored below `~/.dsh/dsh-cloud-sync/local-plugins/` and profile dependencies are rewritten to their new local paths.
 
-在新设备安装本 Sync bundle 并配置同一目标，在 **同步状态** 页可查看远端插件与本机安装状态，选择安装缺失插件，或 **预览恢复** → **应用恢复** 完成完整 profile 恢复。恢复只写 profile 文件，依赖安装延迟到 DSH 完全重启后执行。
+## Providers
 
-## 提供商
+Cloud Sync supports WebDAV only. The endpoint must use HTTPS; HTTP Basic authentication is rejected to avoid sending credentials in clear text.
 
-Cloud Sync 目前仅支持 **WebDAV**。端点必须使用 HTTPS；明文 HTTP Basic 认证会被拒绝，以避免凭据明文传输。
+## Cloud Sync updates
 
-## 同步策略
+When a device synchronizes a locally installed Cloud Sync `.tgz`, it publishes that package to the same private WebDAV target. Other devices check `releases/dsh-cloud-sync/latest.json` when the Cloud Sync settings page opens. If a newer version is available, an **Update** button is shown. Updating is explicit: the package is downloaded to `~/.dsh/dsh-cloud-sync/releases/`, SHA-256 verified, then installed into the `web` profile. Fully restart DSH after the update.
 
-| 策略 | 说明 |
-| --- | --- |
-| **智能合并**（默认） | 合并插件依赖、bundle 与源码归档；双方同时修改同一项时暂停询问保留云端还是本地。 |
-| **云端优先** | 用远端快照恢复当前 profile。 |
-| **本地优先** | 用当前 profile 覆盖远端快照。 |
+The first installation of Cloud Sync is still manual. A sync never silently replaces the running Cloud Sync bundle, and an older device cannot overwrite a newer release already stored in WebDAV.
 
-## 客户端加密
+Release checks compare both version and package checksum. This permits a fixed same-version repair to show an **Update** action without artificially increasing the displayed version.
 
-在设置面板中提供加密口令启用。快照、历史与本地插件源码归档在上传前均以 AES-256-GCM 加密，每个加密对象携带独立 KDF salt——第二台设备只需相同口令，无需拷贝本地设置文件。重启 DSH 后需重新输入口令。
+Cloud Sync itself is intentionally excluded from profile snapshots and lockfiles. Its local `.tgz` path must never be copied to another computer. Each device keeps its own bootstrap installation, then uses the explicit WebDAV update action for later versions.
 
-## 安全说明
+Only packages declared in the profile `package.json` can be rebuilt automatically. Before syncing, add a manually cloned plugin through `dsh plugin --profile web add` so its package source is declared; a Cordis configuration entry alone cannot tell a target device where to download that package.
 
-- 使用**私有** HTTPS WebDAV 目录与应用密码。
-- 源码归档在恢复前做 SHA-256 校验，写入 DSH 同步目录，拒绝路径穿越。
-- 恢复前先将旧 profile 文件写入 `~/.dsh/dsh-cloud-sync/backups/`，仅保留最近 10 个本地备份。
-- 加密保护远端快照内容，但不能替代访问控制，也无法保护已被入侵的设备。
-- Windows 下记住的应用密码用 DPAPI（当前用户）保护；其他平台存放于独立的仅属主（0600）本地凭据文件，`settings.json` 永远不含密码。
+## Sync policies
 
-## 开发
+- **Smart merge** is the default. It unions plugin dependencies, bundles, and source archives. When both sides changed the same dependency, source archive, or profile configuration, it pauses and asks whether to keep the cloud or local version for that sync.
+- **Cloud first** restores the remote snapshot to the current profile.
+- **Local first** replaces the remote snapshot with the current profile.
 
-```powershell
-# 语法检查
-pnpm check
+## History, selection, and devices
 
-# 单元测试（内置 WebDAV 模拟服务器）
-pnpm test
-```
+- Every successful sync records a dated snapshot history entry with the originating device name and identifier. Use **Refresh history** and **Rollback** in Settings to recover a selected snapshot. The latest 30 remote history entries are retained.
+- **Check differences** lists changed plugin versions and profile configuration files. Select only the entries that should move in the current sync, or use **Sync all** for the complete snapshot.
+- Set a device name and enable automatic sync with an interval from 5 minutes to 24 hours. Automatic sync checks for changes and leaves unresolved smart-merge conflicts for manual review.
+- Local-plugin source archives can be excluded independently, allowing configuration-only synchronization.
 
-### 项目结构
+## Client-side encryption
 
-```
-lib/
-  index.js   # DSH bundle 入口：注册 /api/dsh-cloud-sync/* 路由（仅回环地址）
-  core.js    # 核心逻辑：WebDAV 客户端、快照、加密、插件生命周期
-  client.js  # Web 面板（React，注入设置页"云同步"区块）
-test/
-  core.test.mjs  # 核心流程集成测试
-cordis.patch.yml # 向 DSH web profile 注入 host API 与面板
-```
+Client-side encryption is optional and uses an encryption passphrase supplied in the Settings panel. Snapshots, history, and local-plugin source archives are encrypted with AES-256-GCM before they are uploaded to WebDAV. Each encrypted object carries a fresh KDF salt, so a second device only needs the same passphrase and never a copied local settings file. The passphrase and derived key are never written to disk; after restarting DSH, enter the passphrase again before accessing encrypted sync data. Cloud Sync release archives remain unencrypted so devices can still discover and explicitly download an update.
 
-## 发布
+Installing a package can complete while pnpm reports that optional dependency build scripts require approval. In that case the bundle is enabled and DSH can be restarted; approve only the build scripts you trust before relying on features that need their native or download-time setup.
 
-版本号遵循 `major.minor.patch`。每次发布：
+For remote plugin installation, Cloud Sync imports the source profile's approved `allowBuilds` entries and its lockfile-pinned Git revision before running pnpm. The source device must perform a Sync after granting a build approval so that permission is available to a new device.
 
-1. 更新 `package.json` 的 `version` 与 `README.md` 徽章；
-2. 执行 `pnpm check` 与 `pnpm test`；
-3. 打包 `.tgz`（`npm pack`），通过已同步设备推送到 WebDAV `releases/dsh-cloud-sync/`；
-4. 其他设备在云同步设置页会检测到新版本并显式更新。
+On Windows, Cloud Sync creates a profile-local `pnpm.cmd` shim that points to that device's own global pnpm installation. This lets installed DSH plugins run `pnpm update` even when the desktop application's PATH does not include the global npm shim directory. The generated shim is machine-local and is not copied into a snapshot.
 
-## 许可
+Machine-specific pnpm paths such as `storeDir`, `cacheDir`, and global directory settings are removed from both `pnpm-workspace.yaml` and `.npmrc` before a snapshot is uploaded or restored. Before any pnpm operation, Cloud Sync reads the profile's current `node_modules/.modules.yaml` and writes that device's own store path locally. Portable pnpm settings including `allowBuilds`, release-age policy, and the lockfile remain synchronized.
 
-[MIT](LICENSE) © 2025 dickpy
+## Plugin lifecycle
+
+The panel derives plugins from the synced profile instead of asking for package specs manually. It can install missing remote-declared plugins and uninstall installed packages. Both actions modify the selected DSH profile and update the `dsh.profile.bundles` list when the package declares `dsh.bundle`. They require a restart.
+
+Uninstalling a plugin removes it only from the current profile. It does not remove a backed-up local source archive from the sync target.
+
+## Safety notes
+
+Use a private HTTPS WebDAV directory and an app password. Source archives are checksummed before restoration, written under the DSH sync directory, and reject traversal paths. A restore first writes the prior profile files to `~/.dsh/dsh-cloud-sync/backups/`; only the newest ten local backups are retained. Encryption protects remote snapshot contents, but it does not replace access controls or protect a device that is already compromised.
