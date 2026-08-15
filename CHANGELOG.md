@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.19.1 — 2026-08-16
+
+- “云服务”页完整展示 WebDAV、S3、OSS、COS、MinIO 渠道，当前仅启用一个渠道；连接弹窗直接对应所选渠道。
+- 同步方式改为配置页右上角的分段切换，移除“自动同步与加密（可选）”界面区块。
+- 新增“配置与历史”页，集中放置同步策略、历史恢复和本地插件源码；“同步状态”页仅保留状态概览和插件安装状态，并优化桌面与移动端布局。
+
+## Unreleased
+
 ## 0.19.0 — 2026-08-16
 
 - 同步渠道在 WebDAV 基础上新增 Amazon S3、阿里云 OSS、腾讯云 COS 和 MinIO；对象存储使用 S3 Signature V4 兼容 API。
