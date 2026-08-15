@@ -9,6 +9,23 @@ import { checkSelfUpdate, compareVersions, connectWebDav, createSnapshot, ensure
 
 process.env.NODE_ENV = 'test'
 
+function githubRelease(version, archive) {
+  const asset = `dsh-local-dsh-cloud-sync-${version}.tgz`
+  return {
+    tag_name: `v${version}`,
+    draft: false,
+    prerelease: false,
+    assets: [{ name: asset, browser_download_url: `https://github.com/dickpy/dsh-cloud-sync/releases/download/v${version}/${asset}`, digest: `sha256:${createHash('sha256').update(archive).digest('hex')}` }],
+  }
+}
+
+function githubFetcher(release, archive) {
+  return async url => {
+    if (url === 'https://api.github.com/repos/dickpy/dsh-cloud-sync/releases/latest') return new Response(JSON.stringify(release))
+    return new Response(archive)
+  }
+}
+
 const home = await mkdtemp(join(tmpdir(), 'dsh-sync-home-'))
 const profile = join(home, 'profiles', 'web')
 const localPlugin = join(home, 'work', 'imagegen')
@@ -76,12 +93,9 @@ assert.equal(selfFreeManifest.dependencies['@dsh-local/dsh-cloud-sync'], undefin
 assert.equal(selfFreeManifest.dsh.profile.bundles.includes('@dsh-local/dsh-cloud-sync'), false)
 assert.equal(sanitizePnpmLock("importers:\n  .:\n    dependencies:\n      '@dsh-local/dsh-cloud-sync':\n        specifier: file:C:/old.tgz\n        version: file:../../old.tgz\n      demo:\n        specifier: 1.0.0\npackages:\n  '@dsh-local/dsh-cloud-sync@file:../../old.tgz':\n    resolution: {tarball: file:../../old.tgz}\nsnapshots:\n  '@dsh-local/dsh-cloud-sync@file:../../old.tgz': {}\n").includes('dsh-cloud-sync'), false)
 const released = await synchronizeSnapshots({ home, strategy: 'local' })
-assert.equal(released.release.published, true)
-assert.ok(objects.has('DSH-Sync/releases/dsh-cloud-sync/latest.json'))
+assert.equal(released.direction, 'uploaded')
 const sameVersionRevision = Buffer.from('same version cloud sync repair')
-objects.set('DSH-Sync/releases/dsh-cloud-sync/0.18.3.tgz', sameVersionRevision)
-objects.set('DSH-Sync/releases/dsh-cloud-sync/latest.json', Buffer.from(JSON.stringify({ packageName: '@dsh-local/dsh-cloud-sync', version: '0.18.3', objectKey: 'releases/dsh-cloud-sync/0.18.3.tgz', sha256: createHash('sha256').update(sameVersionRevision).digest('hex'), createdAt: new Date().toISOString() })))
-const sameVersionUpdate = await checkSelfUpdate({ home })
+const sameVersionUpdate = await checkSelfUpdate({ home, fetcher: githubFetcher(githubRelease('0.18.3', sameVersionRevision), sameVersionRevision) })
 assert.equal(sameVersionUpdate.available, true)
 assert.equal(sameVersionUpdate.sameVersionRevision, true)
 const newHome = await mkdtemp(join(tmpdir(), 'dsh-sync-new-home-'))
@@ -111,7 +125,7 @@ assert.equal(mergedManifest.dependencies['@example/local'] !== undefined, true)
 assert.equal(mergedManifest.dependencies['@dsh-local/dsh-cloud-sync'], undefined)
 assert.equal(mergedRemote.sources.some(item => item.name === '@example/local'), true)
 assert.equal(Buffer.from(mergedRemote.profiles.find(item => item.name === 'web').files['.npmrc'], 'base64').toString('utf8').includes('store-dir'), false)
-assert.equal((await checkSelfUpdate({ home: newHome })).available, false)
+assert.equal((await checkSelfUpdate({ home: newHome, fetcher: async () => new Response('', { status: 404 }) })).available, false)
 const unlocked = await unlockEncryption({ passphrase: 'correct horse battery staple', enable: true }, { home: newHome })
 assert.equal(unlocked.encryption.enabled, true)
 assert.equal(unlocked.encryption.unlocked, true)
@@ -125,9 +139,7 @@ await connectWebDav({ provider: { type: 'webdav', url: `http://127.0.0.1:${port}
 await unlockEncryption({ passphrase: 'correct horse battery staple', enable: true }, { home: encryptedSecondDevice })
 assert.equal((await loadRemoteSnapshot(encryptedSecondDevice)).schema, 'dsh-cloud-sync/v1')
 const newerArchive = Buffer.from('new cloud-sync package')
-objects.set('DSH-Sync/releases/dsh-cloud-sync/9.0.0.tgz', newerArchive)
-objects.set('DSH-Sync/releases/dsh-cloud-sync/latest.json', Buffer.from(JSON.stringify({ packageName: '@dsh-local/dsh-cloud-sync', version: '9.0.0', objectKey: 'releases/dsh-cloud-sync/9.0.0.tgz', sha256: createHash('sha256').update(newerArchive).digest('hex'), createdAt: new Date().toISOString() })))
-const update = await checkSelfUpdate({ home: newHome })
+const update = await checkSelfUpdate({ home: newHome, fetcher: githubFetcher(githubRelease('9.0.0', newerArchive), newerArchive) })
 assert.equal(update.available, true)
 assert.equal(update.release.version, '9.0.0')
 assert.equal(compareVersions('0.10.0', '0.9.0') > 0, true)

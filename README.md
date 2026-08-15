@@ -5,7 +5,7 @@
 **可移植的 DeepSeek Harness 配置文件与本地插件源码同步工具**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.18.2-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-0.18.3-blue)](package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dickpy/dsh-cloud-sync/pulls)
 
@@ -47,7 +47,7 @@ DSH Cloud Sync 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh)（DSH�
 | 🔀 **三种同步策略** | 智能合并（默认）、云端优先、本地优先 |
 | 🧩 **插件生命周期管理** | 面板直接从同步的 profile 派生插件列表，支持远程插件安装 / 卸载 |
 | 🔄 **自动同步** | 设备名 + 5 分钟 ~ 24 小时间隔，仅在检测到变化时运行 |
-| 🆕 **自更新** | 通过 GitHub Releases / 私有 WebDAV 分发自身 `.tgz`，SHA-256 校验后显式更新 |
+| 🆕 **自更新** | 通过 GitHub Releases 分发自身 `.tgz`，使用 GitHub SHA-256 资产摘要校验后显式更新 |
 
 ## 快速开始
 

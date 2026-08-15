@@ -2,9 +2,9 @@
 
 All notable changes to this project are documented in this file.
 
-## 0.18.3 - 2026-08-15
+## 0.18.3 — 2026-08-15
 
-- 自更新改为检查并下载 GitHub Releases，不再依赖每个用户各自的 WebDAV。
+- 自更新改为检查并下载 GitHub Releases（`dickpy/dsh-cloud-sync`），不再依赖每个用户各自的 WebDAV；使用 GitHub 资产 SHA-256 摘要校验，不再需要私有 WebDAV 的 `releases/dsh-cloud-sync/latest.json`。
 - 同步主流程按策略调整：本地优先直接同步；云端优先和智能合并先展示对本机的影响再确认。
 - 差异窗口改为“当前状态 / 同步后”的结果导向展示，智能合并可逐项选择本地变化。
 - 顶部导航固定；高级设置收起为自动同步、加密、历史恢复和本地源码区域。

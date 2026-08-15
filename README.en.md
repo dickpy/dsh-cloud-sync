@@ -5,7 +5,7 @@
 **Portable DeepSeek Harness profile and local-plugin source synchronization**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.18.2-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-0.18.3-blue)](package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dickpy/dsh-cloud-sync/pulls)
 
@@ -34,7 +34,7 @@ It **never** copies sessions, attachments, pnpm cache, `node_modules`, or creden
 | 🔀 **Three sync policies** | Smart merge (default), Cloud first, Local first |
 | 🧩 **Plugin lifecycle** | Panel derives plugins from the synced profile; install / uninstall remote-declared plugins |
 | 🔄 **Automatic sync** | Device name + interval from 5 minutes to 24 hours; runs only when changes are detected |
-| 🆕 **Self-update** | Distributes its own `.tgz` via GitHub Releases / private WebDAV with SHA-256 verification and explicit updates |
+| 🆕 **Self-update** | Distributes its own `.tgz` via GitHub Releases with GitHub SHA-256 asset-digest verification and explicit updates |
 
 ## Quick start
 
