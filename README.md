@@ -5,11 +5,11 @@
 **可移植的 DeepSeek Harness 配置文件与本地插件源码同步工具**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.18.3-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-0.19.0-blue)](package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dickpy/dsh-cloud-sync/pulls)
 
-`@dsh-local/dsh-cloud-sync` · WebDAV · AES-256-GCM 客户端加密 · 快照历史与回滚
+`@dsh-local/dsh-cloud-sync` · WebDAV / S3 / OSS / COS / MinIO · AES-256-GCM 客户端加密 · 快照历史与回滚
 
 [English](README.en.md) · [变更日志](CHANGELOG.md) · [问题反馈](https://github.com/dickpy/dsh-cloud-sync/issues)
 
@@ -21,12 +21,12 @@
 
 DSH Cloud Sync 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh)（DSH）的官方 bundle 插件，用于**跨设备移植 DSH 环境**。
 
-它的核心思路是：**只同步小而可复现的配置文件**，而不是复制 `node_modules`。同步到 WebDAV 的是配置快照与本地插件源码归档，目标电脑上由 DSH / pnpm 自动重建依赖，从而在多台设备间保持一致的插件环境。
+它的核心思路是：**只同步小而可复现的配置文件**，而不是复制 `node_modules`。配置快照与本地插件源码归档可存入 WebDAV、S3、OSS、COS 或 MinIO，目标电脑上由 DSH / pnpm 自动重建依赖，从而在多台设备间保持一致的插件环境。
 
 ```
 ┌─────────────┐   只同步配置快照 + 源码归档   ┌──────────────┐
-│  设备 A      │ ───────────────────────────▶ │  WebDAV      │
-│  (办公室)     │                              │  (坚果云等)   │
+│  设备 A      │ ───────────────────────────▶ │  远端存储     │
+│  (办公室)     │                              │ WebDAV / S3  │
 └─────────────┘                              └──────────────┘
 ┌─────────────┐   恢复快照，pnpm 重建依赖      ▲
 │  设备 B      │ ───────────────────────────┘
@@ -41,6 +41,7 @@ DSH Cloud Sync 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh)（DSH�
 | 特性 | 说明 |
 | --- | --- |
 | 📦 **轻量同步** | 只同步 `package.json`、`pnpm-lock.yaml`、`.npmrc`、`pnpm-workspace.yaml`、`cordis.patch.yml`、`cordis.yml` 及市场热更新 YAML |
+| ☁ **多渠道存储** | WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO；同一时间只启用一个渠道 |
 | 🔗 **源码自动归档** | 同步时自动捕获所有可达的 `file:` / `link:` 依赖源码，剥离旧驱动器路径 |
 | 🔒 **客户端加密** | 可选 AES-256-GCM 加密，每次对象携带全新 KDF salt，口令与派生密钥绝不落盘 |
 | 🕘 **快照历史与回滚** | 每次成功同步记录历史（远端保留最近 30 条），支持一键回滚 |
@@ -63,8 +64,8 @@ dsh plugin --profile web add .
 
 ### 2. 首次备份
 
-1. 点击 **连接**，输入 WebDAV 端点、账号邮箱与应用密码。坚果云请在账号安全设置中创建应用密码；首次同步会自动创建端点目录。
-2. 保存连接，profile 即配置为仅 WebDAV 同步。
+1. 点击 **连接**，选择 WebDAV、S3、OSS、COS 或 MinIO，并填写对应端点和凭据。
+2. 保存连接；切换并保存另一渠道时会替换当前渠道配置。
 3. 点击 **同步**，自动归档每个可达的本地源码插件。`.dshsyncignore` 可额外排除文件或目录名。
 
 ### 3. 在新设备恢复
@@ -93,17 +94,17 @@ dsh plugin --profile web add .
 
 ## 自更新机制
 
-- Cloud Sync 设置页打开时检查最新 [GitHub Release](https://github.com/dickpy/dsh-cloud-sync/releases)，无需 WebDAV 连接；
+- Cloud Sync 设置页打开时检查最新 [GitHub Release](https://github.com/dickpy/dsh-cloud-sync/releases)，无需配置同步渠道；
 - 检测到新版本时显示 **更新** 按钮：下载到 `~/.dsh/dsh-cloud-sync/releases/`，SHA-256 校验后安装进 `web` profile；
 - 更新是显式的：同步**永远不会**静默替换正在运行的 Cloud Sync bundle；
 - 版本与校验和同时比较，允许同版本修复包显示更新动作，无需虚增版本号。
 
 ## 安全说明
 
-- 使用**私有** HTTPS WebDAV 目录与应用密码；HTTP Basic 明文认证会被拒绝；
+- WebDAV、S3、OSS、COS 应使用 HTTPS；MinIO 支持本机或可信内网 HTTP，公网部署仍应使用 HTTPS；
 - 源码归档恢复前做 SHA-256 校验，写入 DSH 同步目录，**拒绝路径穿越**；
 - 恢复前先将旧 profile 写入 `~/.dsh/dsh-cloud-sync/backups/`，仅保留最近 10 个本地备份；
-- Windows 下记住的应用密码以 **DPAPI**（当前用户）保护；其他平台存放于独立的仅属主（`0600`）本地凭据文件；`settings.json` 永远不含密码；
+- Windows 下记住的密码或 Secret Access Key 以 **DPAPI**（当前用户）保护；其他平台存放于独立的仅属主（`0600`）本地凭据文件；`settings.json` 永远不含明文密钥；
 - 加密保护远端快照内容，但不能替代访问控制，也无法保护已被入侵的设备。
 
 ## 开发
@@ -119,7 +120,7 @@ dsh plugin --profile web add .
 # 语法检查
 pnpm check
 
-# 单元测试（内置 WebDAV 模拟服务器）
+# 单元测试（内置 WebDAV / S3 兼容模拟服务器）
 pnpm test
 ```
 
@@ -128,10 +129,10 @@ pnpm test
 ```
 lib/
   index.js   # DSH bundle 入口：注册 /api/dsh-cloud-sync/* 路由（仅回环地址）
-  core.js    # 核心逻辑：WebDAV 客户端、快照、加密、插件生命周期（~1200 行）
+  core.js    # 核心逻辑：存储 provider、快照、加密、插件生命周期
   client.js  # Web 面板（React，注入设置页"云同步"区块）
 test/
-  core.test.mjs  # 核心流程集成测试（模拟 WebDAV 服务器）
+  core.test.mjs  # 核心流程集成测试（模拟 WebDAV / S3 兼容服务器）
 cordis.patch.yml # 向 DSH web profile 注入 host API 与面板
 ```
 
@@ -146,8 +147,8 @@ cordis.patch.yml # 向 DSH web profile 注入 host API 与面板
 
 ## 常见问题
 
-**Q: 为什么只支持 WebDAV？**
-A: 当前版本聚焦于 WebDAV（坚果云等国内服务支持良好）。端点必须使用 HTTPS。
+**Q: 对象存储 Endpoint 怎么填？**
+A: 填服务根地址，Bucket 单独填写。S3 / OSS / COS 使用对应区域的 S3 兼容 Endpoint；COS 的 Bucket 通常包含 APPID。MinIO 可填写反向代理基础路径。
 
 **Q: 会自动替换正在运行的 Cloud Sync 吗？**
 A: 不会。更新永远是显式操作，需要你在设置页点击 **更新** 并重启 DSH。

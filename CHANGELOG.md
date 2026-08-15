@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.19.0 — 2026-08-16
+
+- 同步渠道在 WebDAV 基础上新增 Amazon S3、阿里云 OSS、腾讯云 COS 和 MinIO；对象存储使用 S3 Signature V4 兼容 API。
+- 设置页统一为单一同步渠道选择器；保存新渠道会替换旧渠道，同一时间仅启用一个 provider。
+- Access Key Secret 与 WebDAV 密码继续使用独立凭据文件保存，Windows 下由 DPAPI 保护；切换渠道时不会复用旧渠道密钥。
+- 新增对象存储连接、签名请求、快照上传/读取、密钥掩码与渠道切换集成测试。
+
 ## 0.18.3 — 2026-08-15
 
 - 自更新改为检查并下载 GitHub Releases（`dickpy/dsh-cloud-sync`），不再依赖每个用户各自的 WebDAV；使用 GitHub 资产 SHA-256 摘要校验，不再需要私有 WebDAV 的 `releases/dsh-cloud-sync/latest.json`。

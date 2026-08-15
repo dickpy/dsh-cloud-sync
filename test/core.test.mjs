@@ -5,7 +5,7 @@ import { once } from 'node:events'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { checkSelfUpdate, compareVersions, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, pushSnapshot, status, synchronizeSnapshots, unlockEncryption } from '../lib/core.js'
+import { checkSelfUpdate, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, status, synchronizeSnapshots, unlockEncryption } from '../lib/core.js'
 
 process.env.NODE_ENV = 'test'
 
@@ -30,8 +30,13 @@ const home = await mkdtemp(join(tmpdir(), 'dsh-sync-home-'))
 const profile = join(home, 'profiles', 'web')
 const localPlugin = join(home, 'work', 'imagegen')
 const objects = new Map()
+const objectStorageRequests = []
 const server = createServer(async (request, response) => {
-  const key = new URL(request.url, 'http://localhost').pathname.replace(/^\//, '')
+  const rawKey = new URL(request.url, 'http://localhost').pathname.replace(/^\//, '')
+  const virtualBucket = request.headers.host?.toLowerCase().startsWith('test-bucket.localhost:') ? 'test-bucket' : ''
+  const key = virtualBucket !== '' && rawKey.startsWith('storage/') ? `storage/${virtualBucket}/${rawKey.slice('storage/'.length)}` : rawKey
+  if (key.startsWith('storage/')) objectStorageRequests.push({ method: request.method, key, host: request.headers.host, authorization: request.headers.authorization, payloadHash: request.headers['x-amz-content-sha256'] })
+  if (request.method === 'HEAD' && key.replace(/\/$/, '') === 'storage/test-bucket') { response.writeHead(200, { etag: '"bucket"' }); response.end(); return }
   if (request.method === 'PROPFIND' && key === 'DSH-Sync') { response.writeHead(404); response.end(); return }
   if (request.method === 'PROPFIND') { response.writeHead(207); response.end(); return }
   if (request.method === 'MKCOL') { response.writeHead(201); response.end(); return }
@@ -95,7 +100,7 @@ assert.equal(sanitizePnpmLock("importers:\n  .:\n    dependencies:\n      '@dsh-
 const released = await synchronizeSnapshots({ home, strategy: 'local' })
 assert.equal(released.direction, 'uploaded')
 const sameVersionRevision = Buffer.from('same version cloud sync repair')
-const sameVersionUpdate = await checkSelfUpdate({ home, fetcher: githubFetcher(githubRelease('0.18.3', sameVersionRevision), sameVersionRevision) })
+const sameVersionUpdate = await checkSelfUpdate({ home, fetcher: githubFetcher(githubRelease('0.19.0', sameVersionRevision), sameVersionRevision) })
 assert.equal(sameVersionUpdate.available, true)
 assert.equal(sameVersionUpdate.sameVersionRevision, true)
 const newHome = await mkdtemp(join(tmpdir(), 'dsh-sync-new-home-'))
@@ -145,5 +150,40 @@ assert.equal(update.release.version, '9.0.0')
 assert.equal(compareVersions('0.10.0', '0.9.0') > 0, true)
 assert.equal((await getPublicSettings(home)).provider.password, '<stored-locally>')
 assert.equal((await readFile(join(home, 'dsh-cloud-sync', 'settings.json'), 'utf8')).includes('secret'), false)
+const knownSignature = signAwsV4({ method: 'GET', host: 'examplebucket.s3.amazonaws.com', path: '/photos/%E4%B8%AD%E6%96%87.jpg', payloadHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', region: 'ap-east-1', service: 's3', accessKeyId: 'AKIDEXAMPLE', secretAccessKey: 'SECRETEXAMPLE', amzDate: '20260816T120000Z' })
+assert.equal(knownSignature.authorization, 'AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20260816/ap-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=3672dbe6bf93e4f3dcd698dd5b05884a5b7dc68e600d03f4efd805db86480e6d')
+
+const objectHome = await mkdtemp(join(tmpdir(), 'dsh-sync-object-storage-'))
+const objectProfile = join(objectHome, 'profiles', 'web')
+await mkdir(objectProfile, { recursive: true })
+await writeFile(join(objectProfile, 'package.json'), JSON.stringify({ name: 'dsh-profile-web', dependencies: {}, dsh: { profile: { bundles: [] } } }))
+await writeFile(join(objectProfile, 'cordis.patch.yml'), '[]\n')
+const objectEndpoint = `http://localhost:${port}/storage`
+const objectProvider = type => ({ type, endpoint: objectEndpoint, region: type === 'oss' ? 'cn-hangzhou' : type === 'cos' ? 'ap-guangzhou' : 'us-east-1', bucket: 'test-bucket', prefix: 'DSH-Sync', accessKeyId: `key-${type}`, secretAccessKey: `secret-${type}` })
+const s3Settings = await connectProvider({ provider: objectProvider('s3') }, { home: objectHome })
+assert.equal(s3Settings.provider.type, 's3')
+assert.equal(s3Settings.provider.secretAccessKey, '<stored-locally>')
+await assert.rejects(() => connectProvider({ provider: { ...objectProvider('oss'), secretAccessKey: '' } }, { home: objectHome }), /secret/i)
+await assert.rejects(() => connectProvider({ provider: { ...objectProvider('s3'), endpoint: `${objectEndpoint}?unsafe=true` } }, { home: objectHome }), /query parameters/i)
+await assert.rejects(() => connectProvider({ provider: { ...objectProvider('s3'), prefix: '../unsafe' } }, { home: objectHome }), /prefix/i)
+for (const type of ['s3', 'oss', 'cos', 'minio']) {
+  const connected = await connectProvider({ provider: objectProvider(type) }, { home: objectHome })
+  assert.equal(connected.provider.type, type)
+  assert.equal(connected.provider.secretAccessKey, '<stored-locally>')
+  const objectPush = await pushSnapshot({ home: objectHome })
+  assert.equal(objectPush.provider.type, type)
+  assert.ok(objects.has('storage/test-bucket/DSH-Sync/snapshots/latest.json.gz'))
+  assert.equal((await loadRemoteSnapshot(objectHome)).schema, 'dsh-cloud-sync/v1')
+}
+const retainedMinio = await connectProvider({ provider: { ...objectProvider('minio'), secretAccessKey: '' } }, { home: objectHome })
+assert.equal(retainedMinio.provider.type, 'minio')
+assert.equal((await loadSettings(objectHome)).provider.secretAccessKey, 'secret-minio')
+assert.equal('url' in retainedMinio.provider, false)
+assert.ok(objectStorageRequests.every(request => request.authorization?.startsWith('AWS4-HMAC-SHA256 ')))
+assert.ok(objectStorageRequests.every(request => /^[a-f0-9]{64}$/.test(request.payloadHash)))
+assert.ok(objectStorageRequests.some(request => request.authorization.includes('key-oss/') && request.host.startsWith('test-bucket.localhost:') && !request.key.includes('/test-bucket/test-bucket/')))
+assert.ok(objectStorageRequests.some(request => request.authorization.includes('key-cos/') && request.host.startsWith('test-bucket.localhost:') && !request.key.includes('/test-bucket/test-bucket/')))
+const storedObjectSettings = await readFile(join(objectHome, 'dsh-cloud-sync', 'settings.json'), 'utf8')
+assert.equal(storedObjectSettings.includes('secret-minio'), false)
 await new Promise(resolve => server.close(resolve))
 console.log('core tests passed')
