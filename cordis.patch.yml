@@ -1,0 +1,4 @@
+# Adds the host API and the small Sync panel to the DSH web profile.
+- insert:
+    - id: cloud-sync
+      name: '@dsh-local/dsh-cloud-sync'

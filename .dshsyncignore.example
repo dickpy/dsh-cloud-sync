@@ -1,0 +1,5 @@
+# One glob-like directory or file name per line. These defaults are always excluded.
+# node_modules
+# .git
+# .env
+# dist
