@@ -5,7 +5,7 @@
 **Portable DeepSeek Harness profile and local-plugin source synchronization**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.19.0-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-0.19.1-blue)](package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dickpy/dsh-cloud-sync/pulls)
 

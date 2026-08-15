@@ -2,167 +2,175 @@
 
 # DSH Cloud Sync
 
-**可移植的 DeepSeek Harness 配置文件与本地插件源码同步工具**
+**把 DSH 的配置、插件和本地源码，安全地带到每一台设备。**
 
+[![Release](https://img.shields.io/github/v/release/dickpy/dsh-cloud-sync?display_name=tag&sort=semver)](https://github.com/dickpy/dsh-cloud-sync/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.19.1-blue)](package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dickpy/dsh-cloud-sync/pulls)
+[![Downloads](https://img.shields.io/github/downloads/dickpy/dsh-cloud-sync/total)](https://github.com/dickpy/dsh-cloud-sync/releases)
 
-`@dsh-local/dsh-cloud-sync` · WebDAV / S3 / OSS / COS / MinIO · AES-256-GCM 客户端加密 · 快照历史与回滚
+`@dsh-local/dsh-cloud-sync` · WebDAV / Amazon S3 / OSS / COS / MinIO · 快照历史 · 冲突恢复 · GitHub 自更新
 
-[English](README.en.md) · [变更日志](CHANGELOG.md) · [问题反馈](https://github.com/dickpy/dsh-cloud-sync/issues)
+[English](README.en.md) · [变更日志](CHANGELOG.md) · [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases) · [问题反馈](https://github.com/dickpy/dsh-cloud-sync/issues)
 
 </div>
 
 ---
 
-## 它是什么？
+## 它解决了什么问题？
 
-DSH Cloud Sync 是 [DeepSeek Harness](https://github.com/deepseek-ai/dsh)（DSH）的官方 bundle 插件，用于**跨设备移植 DSH 环境**。
+换电脑、重装系统或在家办公时，DSH 环境最容易丢的不是程序，而是那些分散在 profile 里的配置、插件依赖和本地插件源码：手动复制容易漏文件，直接复制 `node_modules` 体积大又不稳定，WebDAV 也不一定是每个人都有的存储服务。
 
-它的核心思路是：**只同步小而可复现的配置文件**，而不是复制 `node_modules`。配置快照与本地插件源码归档可存入 WebDAV、S3、OSS、COS 或 MinIO，目标电脑上由 DSH / pnpm 自动重建依赖，从而在多台设备间保持一致的插件环境。
+DSH Cloud Sync 把这件事变成一个清晰的流程：**只同步可重建的配置和源码归档，把依赖安装交给 DSH / pnpm，在目标设备上恢复出一致的插件环境。**
 
-```
-┌─────────────┐   只同步配置快照 + 源码归档   ┌──────────────┐
-│  设备 A      │ ───────────────────────────▶ │  远端存储     │
-│  (办公室)     │                              │ WebDAV / S3  │
-└─────────────┘                              └──────────────┘
-┌─────────────┐   恢复快照，pnpm 重建依赖      ▲
-│  设备 B      │ ───────────────────────────┘
-│  (家里)      │
-└─────────────┘
-```
+- 不复制会话、附件、`node_modules`、pnpm 缓存或明文凭据。
+- 不绑定某一种云盘：WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO 都可以使用。
+- 不把更新放在私有 WebDAV：插件本身通过公开 GitHub Releases 检查和安装更新。
 
-**绝不**复制：会话、附件、pnpm 缓存、`node_modules`、凭据。
+## 实际效果
 
-## 功能特性
+设置页提供三个清晰的工作区：云服务、配置与历史、同步状态。下面是当前 `0.19.1` 的实际界面：
 
-| 特性 | 说明 |
+<p align="center">
+  <img src="docs/screenshots/cloud-services.png" alt="云服务：选择 WebDAV、S3、OSS、COS 或 MinIO" width="31%">
+  <img src="docs/screenshots/configuration-history.png" alt="配置与历史：选择同步策略并恢复快照" width="31%">
+  <img src="docs/screenshots/sync-status.png" alt="同步状态：查看远端快照和插件安装状态" width="31%">
+</p>
+
+## 核心能力
+
+| 能力 | 你得到的结果 |
 | --- | --- |
-| 📦 **轻量同步** | 只同步 `package.json`、`pnpm-lock.yaml`、`.npmrc`、`pnpm-workspace.yaml`、`cordis.patch.yml`、`cordis.yml` 及市场热更新 YAML |
-| ☁ **多渠道存储** | WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO；同一时间只启用一个渠道 |
-| 🔗 **源码自动归档** | 同步时自动捕获所有可达的 `file:` / `link:` 依赖源码，剥离旧驱动器路径 |
-| 🔒 **客户端加密** | 可选 AES-256-GCM 加密，每次对象携带全新 KDF salt，口令与派生密钥绝不落盘 |
-| 🕘 **快照历史与回滚** | 每次成功同步记录历史（远端保留最近 30 条），支持一键回滚 |
-| 🔀 **三种同步策略** | 智能合并（默认）、云端优先、本地优先 |
-| 🧩 **插件生命周期管理** | 面板直接从同步的 profile 派生插件列表，支持远程插件安装 / 卸载 |
-| 🔄 **自动同步** | 设备名 + 5 分钟 ~ 24 小时间隔，仅在检测到变化时运行 |
-| 🆕 **自更新** | 通过 GitHub Releases 分发自身 `.tgz`，使用 GitHub SHA-256 资产摘要校验后显式更新 |
+| **多云同步渠道** | WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO；同一时间只启用一个渠道，切换服务不需要改代码 |
+| **轻量可重建快照** | 同步 `package.json`、lockfile、workspace、patch 和市场热更新 YAML，而不是打包整个运行环境 |
+| **本地源码归档** | 自动发现可达的 `file:` / `link:` 插件源码，归档后换盘符、换电脑也能恢复 |
+| **三种同步策略** | 智能合并、云端优先、本地优先；两端同时修改同一项时先展示差异再执行 |
+| **历史与恢复** | 每次成功同步留下快照，支持预览、恢复远端版本和回滚到指定历史版本 |
+| **插件安装状态** | 对比远端快照与本机 Web Profile，直接安装或卸载缺失插件 |
+| **GitHub 自更新** | 从 GitHub Releases 检查更新，下载 `.tgz` 后校验 SHA-256，再由用户确认安装 |
+| **兼容加密和自动同步** | 保留已有 AES-256-GCM、设备名和定时同步配置；界面只保留更容易理解的核心操作 |
+
+## 工作方式
+
+```text
+设备 A                         远端存储                         设备 B
+┌─────────────┐   上传快照     ┌─────────────────────┐   下载/恢复   ┌─────────────┐
+│ DSH profile │ ─────────────▶ │ WebDAV / S3 / OSS   │ ───────────▶ │ DSH profile │
+│ 本地插件源码 │                │ COS / MinIO         │              │ pnpm 重建依赖 │
+└─────────────┘                └─────────────────────┘              └─────────────┘
+       │                                │                                  │
+       └────── 只保存可重建文件 ────────┴────── 保留历史快照与校验 ─────────┘
+```
+
+目标设备只需要相同的同步渠道和 DSH profile。恢复会先备份当前 profile，再写入快照；依赖安装等到完全重启 DSH 后执行，避免覆盖正在运行的 bundle。
 
 ## 快速开始
 
-### 1. 安装
+### 安装已发布版本
 
-将本文件夹拷贝到目标电脑，然后运行：
+1. 从 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest) 下载最新的 `dsh-local-dsh-cloud-sync-*.tgz`。
+2. 在目标设备的终端执行：
 
-```powershell
-dsh plugin --profile web add .
-```
+   ```powershell
+   dsh plugin --profile web add .\dsh-local-dsh-cloud-sync-0.19.1.tgz
+   ```
 
-重启 DSH，打开 **设置**，在左侧导航中选择 **云同步**。
+3. 完全退出并重启 DSH，在 **设置 → 云同步** 中开始配置。
 
-### 2. 首次备份
+### 第一次同步
 
-1. 点击 **连接**，选择 WebDAV、S3、OSS、COS 或 MinIO，并填写对应端点和凭据。
-2. 保存连接；切换并保存另一渠道时会替换当前渠道配置。
-3. 点击 **同步**，自动归档每个可达的本地源码插件。`.dshsyncignore` 可额外排除文件或目录名。
+1. 打开 **云服务**，选择 WebDAV、S3、OSS、COS 或 MinIO，填写对应的 Endpoint、Bucket 和凭据。
+2. 进入 **配置与历史**，选择同步策略并点击 **开始同步**。
+3. 需要手动补充本地插件源码时，在同一页填写源码目录并点击 **备份源码**。
+4. 换到新设备后，在 **同步状态** 查看插件安装情况；可先预览远端快照，再应用恢复。
 
-### 3. 在新设备恢复
+> 同一时间只有一个同步渠道处于启用状态。连接并启用新的渠道时，旧渠道会自动停用。
 
-在新设备安装本 Sync bundle 并配置同一目标后：
+## 支持的同步渠道
 
-1. **同步状态** 页查看远端插件与本机安装状态；
-2. 选择安装缺失的插件，或依次点击 **预览恢复** → **应用恢复** 完成完整 profile 恢复；
-3. 恢复只写 profile 文件，**依赖安装延迟到 DSH 完全重启后执行**。
+| 渠道 | 适合场景 | 配置要点 |
+| --- | --- | --- |
+| **WebDAV** | 坚果云、Nextcloud、NAS 等 | 填写 DAV 地址、用户名和应用密码 |
+| **Amazon S3** | AWS 或兼容 S3 的对象存储 | Endpoint、Region、Bucket、Access Key |
+| **阿里云 OSS** | 阿里云对象存储 | 使用 OSS 的 S3 兼容 Endpoint |
+| **腾讯云 COS** | 腾讯云对象存储 | Bucket 通常包含 APPID，填写对应 Region |
+| **MinIO** | 自建对象存储、内网或本地开发 | 填写 MinIO Endpoint、Bucket 和密钥 |
+
+公共网络上的存储服务建议使用 HTTPS。MinIO 在本机或可信内网中可以使用 HTTP。
 
 ## 同步策略
 
-| 策略 | 说明 |
+| 策略 | 行为 |
 | --- | --- |
-| **智能合并**（默认） | 合并插件依赖、bundle 与源码归档；双方同时修改同一项时暂停，询问保留云端还是本地 |
-| **云端优先** | 用远端快照恢复当前 profile |
-| **本地优先** | 用当前 profile 覆盖远端快照 |
+| **智能合并（默认）** | 合并两端的插件依赖、Bundle 和源码归档；发现同一项目被两端修改时，先让你确认 |
+| **云端优先** | 使用远端快照覆盖当前 profile，适合新设备恢复 |
+| **本地优先** | 使用当前 profile 覆盖远端快照，适合把本机状态作为最新版本 |
 
-## 客户端加密
+## 安全边界
 
-在设置面板中提供加密口令（至少 8 个字符）启用：
+- 快照、历史和源码归档可使用 AES-256-GCM 客户端加密；每个对象使用新的 KDF salt。
+- 密码和派生密钥不会写入明文设置文件；Windows 使用当前用户 DPAPI 保护已保存凭据。
+- 恢复前自动备份当前 profile，源码归档恢复会做 SHA-256 校验并拒绝路径穿越。
+- 加密保护的是远端内容，不替代对象存储本身的权限控制；请为 Bucket、Endpoint 和 MinIO 管理员账号配置最小权限。
 
-- 快照、历史与本地插件源码归档在上传前均以 **AES-256-GCM** 加密；
-- 每个加密对象携带独立 KDF salt —— 第二台设备只需相同口令，无需拷贝本地设置文件；
-- 口令与派生密钥**从不写入磁盘**；重启 DSH 后需重新输入口令解锁。
+## GitHub 自更新
 
-## 自更新机制
+打开云同步设置页时，插件会直接检查 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases)，不依赖任何 WebDAV 或对象存储配置。发现新版本后：
 
-- Cloud Sync 设置页打开时检查最新 [GitHub Release](https://github.com/dickpy/dsh-cloud-sync/releases)，无需配置同步渠道；
-- 检测到新版本时显示 **更新** 按钮：下载到 `~/.dsh/dsh-cloud-sync/releases/`，SHA-256 校验后安装进 `web` profile；
-- 更新是显式的：同步**永远不会**静默替换正在运行的 Cloud Sync bundle；
-- 版本与校验和同时比较，允许同版本修复包显示更新动作，无需虚增版本号。
+1. 用户点击 **更新**；
+2. 插件下载对应的 `.tgz` 到本机 release 缓存；
+3. 使用 GitHub 提供的 SHA-256 资产摘要校验；
+4. 用户确认后安装到 `web` profile，重启 DSH 完成切换。
 
-## 安全说明
+更新始终是显式操作，不会在同步时静默替换正在运行的 Cloud Sync。
 
-- WebDAV、S3、OSS、COS 应使用 HTTPS；MinIO 支持本机或可信内网 HTTP，公网部署仍应使用 HTTPS；
-- 源码归档恢复前做 SHA-256 校验，写入 DSH 同步目录，**拒绝路径穿越**；
-- 恢复前先将旧 profile 写入 `~/.dsh/dsh-cloud-sync/backups/`，仅保留最近 10 个本地备份；
-- Windows 下记住的密码或 Secret Access Key 以 **DPAPI**（当前用户）保护；其他平台存放于独立的仅属主（`0600`）本地凭据文件；`settings.json` 永远不含明文密钥；
-- 加密保护远端快照内容，但不能替代访问控制，也无法保护已被入侵的设备。
+## 开发与测试
 
-## 开发
-
-### 环境要求
-
-- Node.js ≥ 18
-- pnpm
-
-### 命令
+环境要求：Node.js 18 或更高版本、pnpm。
 
 ```powershell
-# 语法检查
-pnpm check
-
-# 单元测试（内置 WebDAV / S3 兼容模拟服务器）
-pnpm test
+npm install
+npm run check
+npm test
+npm pack
 ```
 
-### 项目结构
+项目结构：
 
-```
-lib/
-  index.js   # DSH bundle 入口：注册 /api/dsh-cloud-sync/* 路由（仅回环地址）
-  core.js    # 核心逻辑：存储 provider、快照、加密、插件生命周期
-  client.js  # Web 面板（React，注入设置页"云同步"区块）
-test/
-  core.test.mjs  # 核心流程集成测试（模拟 WebDAV / S3 兼容服务器）
-cordis.patch.yml # 向 DSH web profile 注入 host API 与面板
+```text
+lib/index.js       bundle 入口和本地 API 路由
+lib/core.js        存储渠道、快照、加密和插件生命周期
+lib/client.js      设置页 UI
+test/core.test.mjs 核心流程集成测试
+docs/screenshots/  README 界面截图
 ```
 
-### 发布新版本
+## 发布
 
-版本号遵循 `major.minor.patch`：
-
-1. 更新 `package.json` 的 `version` 与 README 徽章；
-2. 执行 `pnpm check` 与 `pnpm test`；
-3. 创建 GitHub Release 并附带 `.tgz` 资产（`npm pack`）；
-4. 其他设备在云同步设置页会检测到新版本并显式更新。
+1. 更新 `package.json` 版本号、README 徽章和 `CHANGELOG.md`；
+2. 执行 `npm run check` 和 `npm test`；
+3. 执行 `npm pack` 生成 `.tgz`；
+4. 创建同版本的 GitHub Release 并上传 `.tgz`；
+5. 其他设备会在设置页检测到更新，并由用户显式安装。
 
 ## 常见问题
 
-**Q: 对象存储 Endpoint 怎么填？**
-A: 填服务根地址，Bucket 单独填写。S3 / OSS / COS 使用对应区域的 S3 兼容 Endpoint；COS 的 Bucket 通常包含 APPID。MinIO 可填写反向代理基础路径。
+**没有 WebDAV，也能检查插件更新吗？**
 
-**Q: 会自动替换正在运行的 Cloud Sync 吗？**
-A: 不会。更新永远是显式操作，需要你在设置页点击 **更新** 并重启 DSH。
+可以。插件更新来自 GitHub Releases，与同步渠道完全独立；WebDAV、S3、OSS、COS、MinIO 只负责你的配置快照和源码归档。
 
-**Q: 如何排除某些文件不同步？**
-A: 在 DSH 同步目录创建 `.dshsyncignore`，每行一个文件或目录名。
+**会不会复制整个 `node_modules`？**
 
-**Q: 远程安装插件时构建脚本需要审批怎么办？**
-A: Cloud Sync 会导入源 profile 的 `allowBuilds` 条目与 lockfile 锁定的 Git 版本；只批准你信任的构建脚本。
+不会。同步的是可重建的 profile 文件和必要的本地插件源码，依赖由目标设备上的 DSH / pnpm 重新安装。
 
-## 贡献
+**为什么恢复后要重启 DSH？**
 
-欢迎提交 [Issue](https://github.com/dickpy/dsh-cloud-sync/issues) 与 [Pull Request](https://github.com/dickpy/dsh-cloud-sync/pulls)！
+恢复会修改 profile 配置。重启可以让 pnpm 和 DSH 从新的 profile 重新建立依赖，避免在运行中的 bundle 上热替换。
 
-## 许可
+**如何排除不想同步的文件？**
+
+在 DSH 同步目录创建 `.dshsyncignore`，每行填写一个要排除的文件或目录名。
+
+## 许可证
 
 [MIT](LICENSE) © 2025 dickpy
