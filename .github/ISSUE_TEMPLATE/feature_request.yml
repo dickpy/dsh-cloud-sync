@@ -1,0 +1,57 @@
+name: ✨ 功能建议
+description: 希望新增或改进某个功能时使用
+title: "[Feature] 简短描述建议"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你的想法！请描述清楚「想解决什么问题」，比直接给方案更有帮助。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决的问题
+      description: 你现在遇到了什么场景 / 痛点？
+      placeholder: 例如：我有两台设备想共用同一个 WebDAV 目录，但……
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的解决方案
+      description: 你希望插件怎么表现？（可以只描述效果，不限定实现方式）
+      placeholder: 例如：在设置页增加一个「清理历史快照」按钮……
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及范围（可多选）
+      multiple: true
+      options:
+        - 同步渠道（WebDAV / S3 / OSS / COS / MinIO）
+        - 快照 / 历史 / 回滚
+        - 本地插件源码归档
+        - 客户端加密
+        - 自动同步
+        - 插件安装 / 卸载
+        - GitHub 自更新
+        - 设置页 UI / 交互
+        - 文档
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 替代方案（可选）
+      description: 你尝试过其他做法吗？效果如何？
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 补充上下文（可选）
+      description: 截图、使用频率、对现有用户的影响等。

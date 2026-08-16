@@ -1,0 +1,102 @@
+name: 🐛 Bug 报告
+description: 同步失败、恢复出错、崩溃或行为异常时使用
+title: "[Bug] 简短描述问题"
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量完整填写以下信息，能帮我们快速定位问题。
+        > ⚠️ **请勿粘贴任何真实凭据**：Access Key / Secret / 密码 / token 一律不要贴出来，用 `<redacted>` 代替。
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: 插件版本
+      description: 设置页「云同步」面板显示的版本号，或执行 `npm view @dickpy/dsh-cloud-sync version` 查看。
+      placeholder: 例如 0.19.1
+    validations:
+      required: true
+
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH 版本与运行环境
+      description: DSH 版本、安装方式（npm 全局 / 源码）、操作系统（Windows / macOS / Linux）。
+      placeholder: 例如 DSH x.y.z · Windows 11 · npm 全局安装
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: 使用的同步渠道
+      description: 出现问题时启用的是哪个渠道？
+      options:
+        - WebDAV
+        - Amazon S3
+        - 阿里云 OSS
+        - 腾讯云 COS
+        - MinIO
+        - 尚未配置 / 与渠道无关
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scenario
+    attributes:
+      label: 问题场景
+      options:
+        - 连接 / 保存渠道失败
+        - 同步（上传 / 下载 / 合并）失败
+        - 恢复快照 / 回滚出错
+        - 本地插件源码归档或恢复失败
+        - 插件安装 / 卸载状态不对
+        - GitHub 自更新检查 / 安装失败
+        - 客户端加密（口令解锁 / 加密同步）异常
+        - 设置页 UI 显示异常
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 尽量给出从打开 DSH 开始的最小复现路径。
+      placeholder: |
+        1. 打开设置 → 云同步
+        2. 选择 WebDAV 并填入……（凭据用 <redacted>）
+        3. 点击「开始同步」
+        4. 报错……
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你认为应该发生什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为与错误信息
+      description: 实际发生了什么？请贴出完整报错信息（可先脱敏）。
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志（可选）
+      description: 相关日志位置参考：`~/.dsh/dsh-cloud-sync/` 下的设置与备份目录、DSH 运行日志。贴日志前请先检查并移除所有敏感信息。
+      render: text
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 补充说明（可选）
+      description: 例如：最近一次正常同步是什么时候、是否升级过插件、是否更换过网络/存储服务等。

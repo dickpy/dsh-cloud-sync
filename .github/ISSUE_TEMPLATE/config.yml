@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 使用文档 / 快速开始
+    url: https://github.com/dickpy/dsh-cloud-sync/blob/main/README.md
+    about: 安装、同步渠道、加密与常见问题请先查阅 README。
+  - name: 💬 提问 / 讨论
+    url: https://github.com/dickpy/dsh-cloud-sync/discussions
+    about: 不确定是不是 Bug、或只是想交流用法？请先到 Discussions 提问。
+  - name: 🔒 安全漏洞
+    url: https://github.com/dickpy/dsh-cloud-sync/security/advisories/new
+    about: 发现凭据泄露、路径穿越等安全问题，请通过 Security Advisory 私密上报，不要公开提交。
