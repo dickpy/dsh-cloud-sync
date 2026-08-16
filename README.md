@@ -2,6 +2,10 @@
 
 # DSH Cloud Sync
 
+<p align="center">
+  <img src="docs/screenshots/hero.png" alt="DSH Cloud Sync 云同步控制台" width="100%">
+</p>
+
 **把 DSH 的配置、插件和本地源码，安全地带到每一台设备。**
 
 [![Release](https://img.shields.io/github/v/release/dickpy/dsh-cloud-sync?display_name=tag&sort=semver)](https://github.com/dickpy/dsh-cloud-sync/releases)

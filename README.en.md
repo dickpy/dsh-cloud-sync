@@ -2,6 +2,10 @@
 
 # DSH Cloud Sync
 
+<p align="center">
+  <img src="docs/screenshots/hero.png" alt="DSH Cloud Sync dashboard" width="100%">
+</p>
+
 **Portable DeepSeek Harness profile and local-plugin source synchronization**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
