@@ -36,6 +36,16 @@ It **never** copies sessions, attachments, pnpm cache, `node_modules`, or creden
 | 🔄 **Automatic sync** | Device name + interval from 5 minutes to 24 hours; runs only when changes are detected |
 | 🆕 **Self-update** | Distributes its own `.tgz` via GitHub Releases with GitHub SHA-256 asset-digest verification and explicit updates |
 
+## Interface
+
+The settings UI follows the active DSH light, dark, and custom theme. Its three tabs stay available while scrolling: Cloud services, Configuration & history, and Sync status.
+
+<p align="center">
+  <img src="docs/screenshots/cloud-services.png" alt="Cloud services: WebDAV, S3, OSS, COS, and MinIO" width="31%">
+  <img src="docs/screenshots/configuration-history.png" alt="Configuration and history: sync policy and snapshots" width="31%">
+  <img src="docs/screenshots/sync-status.png" alt="Sync status: remote availability and installed plugins" width="31%">
+</p>
+
 ## Quick start
 
 Pick one installation method, in order of preference. After installing, **fully quit and restart DSH Web**, then open Settings → **Cloud Sync**.
