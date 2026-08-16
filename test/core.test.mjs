@@ -100,7 +100,7 @@ assert.equal(sanitizePnpmLock("importers:\n  .:\n    dependencies:\n      '@dick
 const released = await synchronizeSnapshots({ home, strategy: 'local' })
 assert.equal(released.direction, 'uploaded')
 const sameVersionRevision = Buffer.from('same version cloud sync repair')
-const sameVersionUpdate = await checkSelfUpdate({ home, fetcher: githubFetcher(githubRelease('0.19.1', sameVersionRevision), sameVersionRevision) })
+const sameVersionUpdate = await checkSelfUpdate({ home, fetcher: githubFetcher(githubRelease('0.19.2', sameVersionRevision), sameVersionRevision) })
 assert.equal(sameVersionUpdate.available, true)
 assert.equal(sameVersionUpdate.sameVersionRevision, true)
 const newHome = await mkdtemp(join(tmpdir(), 'dsh-sync-new-home-'))
