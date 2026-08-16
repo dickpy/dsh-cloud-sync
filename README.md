@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![Downloads](https://img.shields.io/github/downloads/dickpy/dsh-cloud-sync/total)](https://github.com/dickpy/dsh-cloud-sync/releases)
 
-`@dsh-local/dsh-cloud-sync` · WebDAV / Amazon S3 / OSS / COS / MinIO · 快照历史 · 冲突恢复 · GitHub 自更新
+`@dickpy/dsh-cloud-sync` · WebDAV / Amazon S3 / OSS / COS / MinIO · 快照历史 · 冲突恢复 · GitHub 自更新
 
 [English](README.en.md) · [变更日志](CHANGELOG.md) · [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases) · [问题反馈](https://github.com/dickpy/dsh-cloud-sync/issues)
 
@@ -29,7 +29,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 
 ## 实际效果
 
-设置页提供三个清晰的工作区：云服务、配置与历史、同步状态。下面是当前 `0.19.1` 的实际界面：
+设置页提供三个清晰的工作区：云服务、配置与历史、同步状态。下面是当前版本的实际界面：
 
 <p align="center">
   <img src="docs/screenshots/cloud-services.png" alt="云服务：选择 WebDAV、S3、OSS、COS 或 MinIO" width="31%">
@@ -62,16 +62,41 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 
 ## 快速开始
 
-### 安装已发布版本
+按推荐顺序，任选一种方式安装；无论哪种方式，安装完成后都需要**完全退出并重启 DSH Web**，然后在 **设置 → 云同步** 中开始配置。
 
-1. 从 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest) 下载最新的 `dsh-local-dsh-cloud-sync-*.tgz`。
-2. 在目标设备的终端执行：
+### 方式一：让 AI 助手帮你安装（最省事）
 
-   ```powershell
-   dsh plugin --profile web add .\dsh-local-dsh-cloud-sync-0.19.1.tgz
-   ```
+把下面这段话发给 DSH 或 Codex，让它执行安装并重启 DSH Web：
 
-3. 完全退出并重启 DSH，在 **设置 → 云同步** 中开始配置。
+> 请帮我安装 DSH Cloud Sync 插件（npm 包 `@dickpy/dsh-cloud-sync`），然后重启 DSH Web。
+
+### 方式二：通过 npm 安装（推荐）
+
+```powershell
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.1
+```
+
+### 方式三：通过聚合包（.tgz）安装
+
+从 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest) 下载最新的 `dickpy-dsh-cloud-sync-*.tgz`，然后执行：
+
+```powershell
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.1.tgz
+```
+
+适合无法直接访问 npm registry 的内网或离线环境。
+
+### 方式四：自己开发启动
+
+```powershell
+git clone https://github.com/dickpy/dsh-cloud-sync.git
+cd dsh-cloud-sync
+npm install
+npm run check
+dsh plugin --profile web add .
+```
+
+适合需要修改插件源码、调试或贡献代码的场景。
 
 ### 第一次同步
 
@@ -143,7 +168,7 @@ docs/screenshots/  README 界面截图
 
 ## 发布
 
-1. 更新 `package.json` 版本号、README 徽章和 `CHANGELOG.md`；
+1. 更新 `package.json` 版本号并添加 `CHANGELOG.md` 条目；
 2. 执行 `npm run check` 和 `npm test`；
 3. 执行 `npm pack` 生成 `.tgz`；
 4. 创建同版本的 GitHub Release 并上传 `.tgz`；

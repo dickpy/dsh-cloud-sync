@@ -31,3 +31,6 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Local npm cache (used when publishing from this workspace)
+.npm-cache/

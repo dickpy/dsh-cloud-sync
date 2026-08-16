@@ -5,11 +5,10 @@
 **Portable DeepSeek Harness profile and local-plugin source synchronization**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.19.1-blue)](package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dickpy/dsh-cloud-sync/pulls)
 
-`@dsh-local/dsh-cloud-sync` · WebDAV / S3 / OSS / COS / MinIO · AES-256-GCM client-side encryption · Snapshot history & rollback
+`@dickpy/dsh-cloud-sync` · WebDAV / S3 / OSS / COS / MinIO · AES-256-GCM client-side encryption · Snapshot history & rollback
 
 [中文](README.md) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/dickpy/dsh-cloud-sync/issues)
 
@@ -39,23 +38,49 @@ It **never** copies sessions, attachments, pnpm cache, `node_modules`, or creden
 
 ## Quick start
 
-### 1. Install
+Pick one installation method, in order of preference. After installing, **fully quit and restart DSH Web**, then open Settings → **Cloud Sync**.
 
-Copy this folder to the target computer, then run:
+### 1. Let an AI assistant install it (easiest)
+
+Send the following to DSH or Codex, and let it install and restart DSH Web:
+
+> Please install the DSH Cloud Sync plugin (npm package `@dickpy/dsh-cloud-sync`) and restart DSH Web.
+
+### 2. Install via npm (recommended)
 
 ```powershell
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.1
+```
+
+### 3. Install from a bundled `.tgz`
+
+Download the latest `dickpy-dsh-cloud-sync-*.tgz` from [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest), then run:
+
+```powershell
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.1.tgz
+```
+
+Useful in intranet or offline environments without direct npm registry access.
+
+### 4. Develop from source
+
+```powershell
+git clone https://github.com/dickpy/dsh-cloud-sync.git
+cd dsh-cloud-sync
+npm install
+npm run check
 dsh plugin --profile web add .
 ```
 
-Restart DSH, open Settings, then choose **Cloud Sync** in the left navigation.
+For modifying the plugin, debugging, or contributing.
 
-### 2. First backup
+### 5. First backup
 
 1. Select **Connect**, choose WebDAV, S3, OSS, COS, or MinIO, then enter its endpoint and credentials.
 2. Save the connection. Selecting and saving another provider replaces the active provider.
 3. Select **Sync**. It automatically archives every reachable local source plugin without retaining its old drive path. `.dshsyncignore` can exclude additional file or directory names.
 
-### 3. Restore on a new device
+### 6. Restore on a new device
 
 Install this Sync bundle and configure the same target, then:
 
@@ -127,7 +152,7 @@ cordis.patch.yml # Injects the host API and panel into the DSH web profile
 
 Versioning follows `major.minor.patch`:
 
-1. Bump `version` in `package.json` and the README badges;
+1. Bump `version` in `package.json` and add a `CHANGELOG.md` entry;
 2. Run `pnpm check` and `pnpm test`;
 3. Create a GitHub Release with the `.tgz` asset (`npm pack`);
 4. Other devices detect the new version and update explicitly from the settings page.

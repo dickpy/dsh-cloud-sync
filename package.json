@@ -1,5 +1,5 @@
 {
-  "name": "@dsh-local/dsh-cloud-sync",
+  "name": "@dickpy/dsh-cloud-sync",
   "version": "0.19.1",
   "description": "Portable DeepSeek Harness profile and local-plugin source synchronization.",
   "type": "module",

@@ -10,7 +10,7 @@ import { checkSelfUpdate, compareVersions, connectProvider, connectWebDav, creat
 process.env.NODE_ENV = 'test'
 
 function githubRelease(version, archive) {
-  const asset = `dsh-local-dsh-cloud-sync-${version}.tgz`
+  const asset = `dickpy-dsh-cloud-sync-${version}.tgz`
   return {
     tag_name: `v${version}`,
     draft: false,
@@ -87,16 +87,16 @@ assert.equal(installDependencySpec('@example/remote', '0.1.13'), '@example/remot
 assert.equal(installDependencySpec('@example/local', 'file:C:/restored/plugin'), '@example/local@file:C:/restored/plugin')
 assert.equal(lockedGitSpec({ files: { 'pnpm-lock.yaml': Buffer.from('importers:\n  .:\n    dependencies:\n      dsh-better-sidebar:\n        specifier: github:omdsh-dev/DSH-better-sidebar\n        version: https://codeload.github.com/omdsh-dev/DSH-better-sidebar/tar.gz/locked-commit\n').toString('base64') } }, 'dsh-better-sidebar', 'github:omdsh-dev/DSH-better-sidebar'), 'https://codeload.github.com/omdsh-dev/DSH-better-sidebar/tar.gz/locked-commit')
 assert.equal(sanitizePnpmWorkspace('packages:\n  - .\nstoreDir: C:/other-user/store\nallowBuilds:\n  demo: true\n').includes('storeDir:'), false)
-const selfArchive = join(home, 'dsh-local-dsh-cloud-sync-0.9.0.tgz')
+const selfArchive = join(home, 'dickpy-dsh-cloud-sync-0.9.0.tgz')
 await writeFile(selfArchive, 'cloud-sync package')
 const sourceManifest = JSON.parse(await readFile(join(profile, 'package.json'), 'utf8'))
-sourceManifest.dependencies['@dsh-local/dsh-cloud-sync'] = 'file:../../dsh-local-dsh-cloud-sync-0.9.0.tgz'
+sourceManifest.dependencies['@dickpy/dsh-cloud-sync'] = 'file:../../dickpy-dsh-cloud-sync-0.9.0.tgz'
 await writeFile(join(profile, 'package.json'), JSON.stringify(sourceManifest))
 const selfFreeSnapshot = await createSnapshot({ home })
 const selfFreeManifest = JSON.parse(Buffer.from(selfFreeSnapshot.snapshot.profiles[0].files['package.json'], 'base64').toString('utf8'))
-assert.equal(selfFreeManifest.dependencies['@dsh-local/dsh-cloud-sync'], undefined)
-assert.equal(selfFreeManifest.dsh.profile.bundles.includes('@dsh-local/dsh-cloud-sync'), false)
-assert.equal(sanitizePnpmLock("importers:\n  .:\n    dependencies:\n      '@dsh-local/dsh-cloud-sync':\n        specifier: file:C:/old.tgz\n        version: file:../../old.tgz\n      demo:\n        specifier: 1.0.0\npackages:\n  '@dsh-local/dsh-cloud-sync@file:../../old.tgz':\n    resolution: {tarball: file:../../old.tgz}\nsnapshots:\n  '@dsh-local/dsh-cloud-sync@file:../../old.tgz': {}\n").includes('dsh-cloud-sync'), false)
+assert.equal(selfFreeManifest.dependencies['@dickpy/dsh-cloud-sync'], undefined)
+assert.equal(selfFreeManifest.dsh.profile.bundles.includes('@dickpy/dsh-cloud-sync'), false)
+assert.equal(sanitizePnpmLock("importers:\n  .:\n    dependencies:\n      '@dickpy/dsh-cloud-sync':\n        specifier: file:C:/old.tgz\n        version: file:../../old.tgz\n      demo:\n        specifier: 1.0.0\npackages:\n  '@dickpy/dsh-cloud-sync@file:../../old.tgz':\n    resolution: {tarball: file:../../old.tgz}\nsnapshots:\n  '@dickpy/dsh-cloud-sync@file:../../old.tgz': {}\n").includes('dsh-cloud-sync'), false)
 const released = await synchronizeSnapshots({ home, strategy: 'local' })
 assert.equal(released.direction, 'uploaded')
 const sameVersionRevision = Buffer.from('same version cloud sync repair')
@@ -106,11 +106,11 @@ assert.equal(sameVersionUpdate.sameVersionRevision, true)
 const newHome = await mkdtemp(join(tmpdir(), 'dsh-sync-new-home-'))
 const newProfile = join(newHome, 'profiles', 'web')
 await mkdir(newProfile, { recursive: true })
-await writeFile(join(newProfile, 'package.json'), JSON.stringify({ name: 'dsh-profile-web', dependencies: { '@dsh-local/dsh-cloud-sync': 'file:C:/cloud-sync.tgz' }, dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@dsh-local/dsh-cloud-sync'] } } }))
+await writeFile(join(newProfile, 'package.json'), JSON.stringify({ name: 'dsh-profile-web', dependencies: { '@dickpy/dsh-cloud-sync': 'file:C:/cloud-sync.tgz' }, dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@dickpy/dsh-cloud-sync'] } } }))
 await writeFile(join(newProfile, 'cordis.patch.yml'), '[]\n')
 await writeFile(join(newProfile, 'pnpm-workspace.yaml'), 'packages:\n  - .\nstoreDir: C:/another-user/store\n')
 await mkdir(join(newProfile, 'node_modules'), { recursive: true })
-await writeFile(join(newProfile, 'node_modules', '.modules.yaml'), 'storeDir: C:/Users/V28774.Huang/AppData/Local/pnpm/store/v11\n')
+await writeFile(join(newProfile, 'node_modules', '.modules.yaml'), 'storeDir: C:/Users/tester/AppData/Local/pnpm/store/v11\n')
 await writeFile(join(newProfile, '.npmrc'), 'fetch-retries=5\nstore-dir=C:/another-user/store\n')
 const shimSource = join(newHome, 'pnpm-bin', 'pnpm.cmd')
 await mkdir(join(newHome, 'pnpm-bin'), { recursive: true })
@@ -121,13 +121,13 @@ await connectWebDav({ provider: { type: 'webdav', url: `http://127.0.0.1:${port}
 const merged = await synchronizeSnapshots({ home: newHome, strategy: 'smart' })
 assert.equal(merged.direction, 'merged')
 assert.equal((await readFile(join(newProfile, 'pnpm-workspace.yaml'), 'utf8')).includes('storeDir:'), false)
-assert.match(await readFile(join(newProfile, '.npmrc'), 'utf8'), /store-dir=C:\/Users\/V28774\.Huang\/AppData\/Local\/pnpm\/store\/v11/)
+assert.match(await readFile(join(newProfile, '.npmrc'), 'utf8'), /store-dir=C:\/Users\/tester\/AppData\/Local\/pnpm\/store\/v11/)
 assert.equal((await readFile(join(newProfile, '.npmrc'), 'utf8')).includes('another-user'), false)
 assert.equal(sanitizeNpmrc('fetch-retries=5\nstore-dir=C:/another-user/store\n').includes('store-dir'), false)
 const mergedRemote = await loadRemoteSnapshot(newHome)
 const mergedManifest = JSON.parse(Buffer.from(mergedRemote.profiles.find(item => item.name === 'web').files['package.json'], 'base64').toString('utf8'))
 assert.equal(mergedManifest.dependencies['@example/local'] !== undefined, true)
-assert.equal(mergedManifest.dependencies['@dsh-local/dsh-cloud-sync'], undefined)
+assert.equal(mergedManifest.dependencies['@dickpy/dsh-cloud-sync'], undefined)
 assert.equal(mergedRemote.sources.some(item => item.name === '@example/local'), true)
 assert.equal(Buffer.from(mergedRemote.profiles.find(item => item.name === 'web').files['.npmrc'], 'base64').toString('utf8').includes('store-dir'), false)
 assert.equal((await checkSelfUpdate({ home: newHome, fetcher: async () => new Response('', { status: 404 }) })).available, false)
