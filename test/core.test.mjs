@@ -5,7 +5,7 @@ import { once } from 'node:events'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption } from '../lib/core.js'
+import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pollGithubDeviceAuthorization, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, startGithubDeviceAuthorization, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption } from '../lib/core.js'
 
 process.env.NODE_ENV = 'test'
 const packageVersion = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version
@@ -242,5 +242,67 @@ assert.ok(objectStorageRequests.some(request => request.authorization.includes('
 assert.ok(objectStorageRequests.some(request => request.authorization.includes('key-cos/') && request.host.startsWith('test-bucket.localhost:') && !request.key.includes('/test-bucket/test-bucket/')))
 const storedObjectSettings = await readFile(join(objectHome, 'dsh-cloud-sync', 'settings.json'), 'utf8')
 assert.equal(storedObjectSettings.includes('secret-minio'), false)
+const gistHome = await mkdtemp(join(tmpdir(), 'dsh-sync-gist-'))
+const gistProfile = join(gistHome, 'profiles', 'web')
+const gistLocalPlugin = join(gistHome, 'work', 'small-plugin')
+await mkdir(gistProfile, { recursive: true }); await mkdir(gistLocalPlugin, { recursive: true })
+await writeFile(join(gistProfile, 'package.json'), JSON.stringify({ name: 'dsh-profile-web', dependencies: { '@example/gist-local': 'link:../../work/small-plugin' }, dsh: { profile: { bundles: ['@example/gist-local'] } } }))
+await writeFile(join(gistProfile, 'cordis.patch.yml'), '[]\n')
+await writeFile(join(gistLocalPlugin, 'package.json'), JSON.stringify({ name: '@example/gist-local', version: '1.0.0' }))
+await writeFile(join(gistLocalPlugin, 'main.js'), 'export const gist = true\n')
+const originalFetch = globalThis.fetch
+const gistId = 'a'.repeat(20)
+const gistFiles = {}
+let gistVersion = 1
+globalThis.fetch = async (input, init = {}) => {
+  const url = String(input)
+  const method = init.method ?? 'GET'
+  const etag = `\"gist-${gistVersion}\"`
+  if (url === 'https://github.com/login/device/code' && method === 'POST') {
+    assert.match(String(init.body), /client_id=Iv1\.test-client/)
+    assert.match(String(init.body), /scope=gist/)
+    return new Response(JSON.stringify({ device_code: 'device-code', user_code: 'CA50-5C57', verification_uri: 'https://github.com/login/device', verification_uri_complete: 'https://github.com/login/device?user_code=CA50-5C57', expires_in: 900, interval: 1 }))
+  }
+  if (url === 'https://github.com/login/oauth/access_token' && method === 'POST') return new Response(JSON.stringify({ access_token: 'github-test-token' }))
+  if (url === 'https://api.github.com/user' && method === 'GET') return new Response(JSON.stringify({ login: 'tester' }), { headers: { etag } })
+  if (url === 'https://api.github.com/gists' && method === 'POST') {
+    assert.match(init.headers.authorization, /^Bearer github-test-token$/)
+    Object.assign(gistFiles, JSON.parse(init.body).files)
+    return new Response(JSON.stringify({ id: gistId, files: gistFiles }), { status: 201, headers: { etag } })
+  }
+  if (url === `https://api.github.com/gists/${gistId}` && method === 'GET') return new Response(JSON.stringify({ id: gistId, files: gistFiles }), { headers: { etag } })
+  if (url === `https://api.github.com/gists/${gistId}` && method === 'PATCH') {
+    assert.equal(init.headers['if-match'], etag)
+    for (const [name, file] of Object.entries(JSON.parse(init.body).files)) {
+      if (file === null) delete gistFiles[name]
+      else gistFiles[name] = { content: file.content, truncated: false }
+    }
+    gistVersion += 1
+    return new Response(JSON.stringify({ id: gistId, files: gistFiles }), { headers: { etag: `\"gist-${gistVersion}\"` } })
+  }
+  throw new Error(`Unexpected GitHub test request: ${method} ${url}`)
+}
+try {
+  const gistSettings = await connectProvider({ provider: { type: 'gist', gistId: '', token: 'github-test-token' } }, { home: gistHome })
+  assert.equal(gistSettings.provider.type, 'gist')
+  assert.equal(gistSettings.provider.gistId, gistId)
+  assert.equal(gistSettings.provider.token, '<stored-locally>')
+  const gistPush = await synchronizeSnapshots({ home: gistHome, strategy: 'local' })
+  assert.equal(gistPush.direction, 'uploaded')
+  assert.deepEqual(gistPush.sources, ['@example/gist-local'])
+  assert.equal((await loadRemoteSnapshot(gistHome)).schema, 'dsh-cloud-sync/v1')
+  assert.equal((await getPublicSettings(gistHome)).savedProviders.gist.gistId, gistId)
+  process.env.DSH_CLOUD_SYNC_GITHUB_CLIENT_ID = 'Iv1.test-client'
+  const deviceAuthorization = await startGithubDeviceAuthorization({ home: gistHome })
+  assert.equal(deviceAuthorization.userCode, 'CA50-5C57')
+  assert.equal((await pollGithubDeviceAuthorization({ requestId: deviceAuthorization.requestId }, { home: gistHome })).status, 'connected')
+  delete process.env.DSH_CLOUD_SYNC_GITHUB_CLIENT_ID
+  for (let index = 0; index < 32; index += 1) {
+    await writeFile(join(gistProfile, 'cordis.patch.yml'), `# ${index}\n`)
+    await synchronizeSnapshots({ home: gistHome, strategy: 'local' })
+  }
+  assert.equal((await listSnapshotHistory({ home: gistHome })).length, 30)
+  assert.ok(Object.keys(gistFiles).length <= 34)
+} finally { globalThis.fetch = originalFetch }
 await new Promise(resolve => server.close(resolve))
 console.log('core tests passed')

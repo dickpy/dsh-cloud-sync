@@ -13,7 +13,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![Downloads](https://img.shields.io/github/downloads/dickpy/dsh-cloud-sync/total)](https://github.com/dickpy/dsh-cloud-sync/releases)
 
-`@dickpy/dsh-cloud-sync` · WebDAV / Amazon S3 / OSS / COS / MinIO · 快照历史 · 冲突恢复 · GitHub 自更新
+`@dickpy/dsh-cloud-sync` · WebDAV / Amazon S3 / OSS / COS / MinIO / GitHub Gist · 快照历史 · 冲突恢复 · GitHub 自更新
 
 [English](README.en.md) · [变更日志](CHANGELOG.md) · [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases) · [问题反馈](https://github.com/dickpy/dsh-cloud-sync/issues)
 
@@ -28,7 +28,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 它把这件事变成一个清晰的流程：**选择任意支持的云服务，上传可重建的配置和源码归档，把依赖安装交给 DSH / pnpm，在目标设备上恢复出一致的插件环境。**
 
 - 不复制会话、附件、`node_modules`、pnpm 缓存或明文凭据。
-- 不绑定某一种云服务：WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO 都可以使用。
+- 不绑定某一种云服务：WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO 和 GitHub Gist 都可以使用。
 - 不把更新放在私有 WebDAV：插件本身通过公开 GitHub Releases 检查和安装更新。
 
 ## 实际效果
@@ -45,7 +45,8 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 
 | 能力 | 你得到的结果 |
 | --- | --- |
-| **多云同步渠道** | WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO；同一时间只启用一个渠道，切换服务不需要改代码 |
+| **多云同步渠道** | WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO、GitHub Gist；同一时间只启用一个渠道，切换服务不需要改代码 |
+| **GitHub 授权连接** | 复制设备授权码并打开 GitHub 确认，无需手动创建 Gist；也可绑定已有的空 Gist |
 | **轻量可重建快照** | 同步 `package.json`、lockfile、workspace、patch 和市场热更新 YAML，而不是打包整个运行环境 |
 | **本地源码归档** | 自动发现可达的 `file:` / `link:` 插件源码，归档后换盘符、换电脑也能恢复 |
 | **三种同步策略** | 智能合并、云端优先、本地优先；两端同时修改同一项时先展示差异再执行 |
@@ -77,7 +78,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 ### 方式二：通过 npm 安装（推荐）
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.7
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.0
 ```
 
 ### 方式三：通过聚合包（.tgz）安装
@@ -85,7 +86,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.7
 从 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest) 下载最新的 `dickpy-dsh-cloud-sync-*.tgz`，然后执行：
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.7.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.0.tgz
 ```
 
 适合无法直接访问 npm registry 的内网或离线环境。
@@ -104,7 +105,7 @@ dsh plugin --profile web add .
 
 ### 第一次同步
 
-1. 打开 **云服务**，选择 WebDAV、S3、OSS、COS 或 MinIO，填写对应的 Endpoint、Bucket 和凭据。
+1. 打开 **云服务**，选择 WebDAV、S3、OSS、COS、MinIO 或 GitHub Gist。Gist 可通过授权码连接，授权完成后会自动创建 secret Gist。
 2. 进入 **配置与历史**，选择同步策略并点击 **开始同步**。
 3. 需要手动补充本地插件源码时，在同一页填写源码目录并点击 **备份源码**。
 4. 换到新设备后，在 **同步状态** 查看插件安装情况；可先预览远端快照，再应用恢复。
@@ -112,6 +113,17 @@ dsh plugin --profile web add .
 > 同一时间只有一个同步渠道处于启用状态。连接并启用新的渠道时，旧渠道会自动停用。
 
 每种云服务会分别保存自己的 Endpoint、Region、Bucket、对象前缀和 Access Key ID。切换回已保存的渠道时，表单会自动填充这些信息；如果该渠道的密钥已保存在本机，密钥框留空即可直接复用，不需要再次输入。
+
+## GitHub Gist
+
+GitHub Gist 很适合**不涉及本地插件源码归档**的配置同步：profile 配置、插件依赖、锁文件、市场 YAML、历史快照都很轻量，使用一个 secret Gist 即可完成多设备恢复。
+
+- 在设置中选择 **GitHub Gist**，复制显示的授权码并在打开的 GitHub 页面确认授权；插件会自动创建一个受管 secret Gist。
+- Gist API 的单个同步对象限制为约 **700 KiB**，受管 Gist 最多 **200 个文件**。超过限制时同步会明确失败，不会截断数据。
+- 本地插件源码归档可能超过 Gist 限制。需要同步源码时请使用 WebDAV、S3、OSS、COS 或 MinIO，或者在同步范围中关闭源码归档。
+- secret Gist 并不等同于端到端私密存储，持有链接的人可读取内容；建议启用本插件的客户端 AES-256-GCM 加密。
+
+发布设备授权功能时，需要为本项目注册 GitHub OAuth App，并在 DSH 进程环境中提供 `DSH_CLOUD_SYNC_GITHUB_CLIENT_ID`。未配置时界面仍可使用拥有 `gist` 权限的 GitHub Token 连接。
 
 WebDAV 目标目录不存在时，保存连接或首次同步会自动创建该目录；嵌套目录以及包含空格或非 ASCII 字符的目录也无需手动预先创建。
 

@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.20.0 - 2026-08-17
+
+- Add GitHub Gist as a sync provider. It creates or binds one managed secret Gist and keeps the existing snapshot, encryption, conflict, and rollback workflows.
+- Add GitHub device authorization with a copyable code and browser launch, plus a GitHub token fallback for builds without an OAuth client ID.
+- Set and display Gist-safe limits: 700 KiB per synced object and 200 managed files. Gist is recommended for configuration-only sync; larger local source archives require WebDAV or object storage.
+- Keep the latest 30 Gist history snapshots and remove expired Gist history files automatically.
+
 ## 0.19.8 - 2026-08-17
 
 - Create a missing WebDAV target directory automatically on connection or first sync, including nested, space-containing, and non-ASCII paths.

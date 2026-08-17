@@ -1,6 +1,6 @@
 {
   "name": "@dickpy/dsh-cloud-sync",
-  "version": "0.19.8",
+  "version": "0.20.0",
   "description": "Portable DeepSeek Harness profile and local-plugin source synchronization.",
   "type": "module",
   "main": "lib/index.js",

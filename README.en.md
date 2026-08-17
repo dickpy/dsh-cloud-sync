@@ -12,7 +12,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dickpy/dsh-cloud-sync/pulls)
 
-`@dickpy/dsh-cloud-sync` · WebDAV / S3 / OSS / COS / MinIO · AES-256-GCM client-side encryption · Snapshot history & rollback
+`@dickpy/dsh-cloud-sync` · WebDAV / S3 / OSS / COS / MinIO / GitHub Gist · AES-256-GCM client-side encryption · Snapshot history & rollback
 
 [中文](README.md) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/dickpy/dsh-cloud-sync/issues)
 
@@ -22,7 +22,7 @@
 
 ## What is it?
 
-**DSH Cloud Sync** is a [DeepSeek Harness](https://github.com/deepseek-ai/dsh) (DSH) bundle for portable profile recovery. It synchronizes small, reproducible profile files to WebDAV, S3, OSS, COS, or MinIO rather than copying `node_modules`, then lets DSH/pnpm rebuild packages on the target computer.
+**DSH Cloud Sync** is a [DeepSeek Harness](https://github.com/deepseek-ai/dsh) (DSH) bundle for portable profile recovery. It synchronizes small, reproducible profile files to WebDAV, S3, OSS, COS, MinIO, or GitHub Gist rather than copying `node_modules`, then lets DSH/pnpm rebuild packages on the target computer.
 
 It **never** copies sessions, attachments, pnpm cache, `node_modules`, or credentials.
 
@@ -31,7 +31,8 @@ It **never** copies sessions, attachments, pnpm cache, `node_modules`, or creden
 | Feature | Description |
 | --- | --- |
 | 📦 **Lightweight sync** | Syncs `package.json`, `pnpm-lock.yaml`, `.npmrc`, `pnpm-workspace.yaml`, `cordis.patch.yml`, `cordis.yml`, and marketplace hot-update YAML files |
-| ☁ **Storage providers** | WebDAV, Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, and MinIO; only one provider is active at a time |
+| ☁ **Storage providers** | WebDAV, Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, MinIO, and GitHub Gist; only one provider is active at a time |
+| 🔐 **GitHub device authorization** | Copy a device code, authorize in GitHub, and let Cloud Sync create its managed secret Gist |
 | 🔗 **Source auto-archiving** | Local-plugin source archives automatically captured from reachable `file:` / `link:` dependencies during Sync |
 | 🔒 **Client-side encryption** | Optional AES-256-GCM encryption; each object carries a fresh KDF salt; passphrase never written to disk |
 | 🕘 **History & rollback** | Every successful sync records a dated snapshot (latest 30 retained remotely) with one-click rollback |
@@ -63,7 +64,7 @@ Send the following to DSH or Codex, and let it install and restart DSH Web:
 ### 2. Install via npm (recommended)
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.7
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.0
 ```
 
 ### 3. Install from a bundled `.tgz`
@@ -71,7 +72,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.7
 Download the latest `dickpy-dsh-cloud-sync-*.tgz` from [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest), then run:
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.7.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.0.tgz
 ```
 
 Useful in intranet or offline environments without direct npm registry access.
@@ -90,13 +91,22 @@ For modifying the plugin, debugging, or contributing.
 
 ### 5. First backup
 
-1. Select **Connect**, choose WebDAV, S3, OSS, COS, or MinIO, then enter its endpoint and credentials.
+1. Select **Connect**, choose WebDAV, S3, OSS, COS, MinIO, or GitHub Gist. Gist can be connected through a device code and will create a secret Gist automatically.
 2. Save the connection. Selecting and saving another provider replaces the active provider.
 3. Select **Sync**. It automatically archives every reachable local source plugin without retaining its old drive path. `.dshsyncignore` can exclude additional file or directory names.
 
 Each provider keeps its own endpoint, region, bucket, prefix, and Access Key ID. When you return to a saved provider, the form is prefilled. If its secret is already stored locally, leave the secret field empty to reuse it.
 
 For WebDAV, a missing target directory is created automatically when the connection is saved or the first sync runs, including nested paths and directory names containing spaces or non-ASCII characters. No manual pre-creation is required.
+
+## GitHub Gist
+
+GitHub Gist is sufficient for configuration-only sync: profile files, dependencies, lockfiles, marketplace YAML, and history snapshots fit comfortably in one managed secret Gist.
+
+- Each Cloud Sync object is limited to approximately **700 KiB** and a managed Gist has a limit of **200 files**. Sync fails explicitly rather than truncating data.
+- Local-plugin source archives can exceed those limits. Use WebDAV or object storage for source archival, or disable source archival in the sync scope.
+- A secret Gist is unlisted, not end-to-end private. Enable the plugin's AES-256-GCM client-side encryption for sensitive content.
+- Device authorization requires a GitHub OAuth App client ID supplied as `DSH_CLOUD_SYNC_GITHUB_CLIENT_ID` to the DSH process when packaging. A token with `gist` access remains available as a fallback.
 
 ### 6. Restore on a new device
 
