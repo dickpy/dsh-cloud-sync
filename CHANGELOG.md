@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.19.7 — 2026-08-17
+
+- Fix repeated OSS syncs by omitting conditional upload headers unsupported by the Alibaba Cloud S3-compatible endpoint.
+- Save non-sensitive connection details and encrypted credentials separately for each provider, so switching providers and returning later reuses the previous configuration.
+
+## 0.19.6 — 2026-08-17
+
+- Fix repeated OSS syncs by omitting conditional upload headers unsupported by the Alibaba Cloud S3-compatible endpoint.
+- Save non-sensitive connection details and encrypted credentials separately for each provider, so switching providers and returning later reuses the previous configuration.
+
+## 0.19.5 — 2026-08-17
+
+- Restore the OSS overwrite-prevention adapter that was verified to work with the Alibaba Cloud OSS endpoint.
+
 ## 0.19.4 — 2026-08-17
 
 - Fix OSS S3-compatible uploads by omitting unsupported first-create conditional headers.
@@ -29,7 +43,7 @@ All notable changes to this project are documented in this file.
 
 - 同步渠道在 WebDAV 基础上新增 Amazon S3、阿里云 OSS、腾讯云 COS 和 MinIO；对象存储使用 S3 Signature V4 兼容 API。
 - 设置页统一为单一同步渠道选择器；保存新渠道会替换旧渠道，同一时间仅启用一个 provider。
-- Access Key Secret 与 WebDAV 密码继续使用独立凭据文件保存，Windows 下由 DPAPI 保护；切换渠道时不会复用旧渠道密钥。
+- Access Key Secret 与 WebDAV 密码继续使用独立凭据文件保存，Windows 下由 DPAPI 保护；每个渠道分别保存自己的密钥。
 - 新增对象存储连接、签名请求、快照上传/读取、密钥掩码与渠道切换集成测试。
 
 ## 0.18.3 — 2026-08-15

@@ -5,7 +5,7 @@ import { once } from 'node:events'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { checkSelfUpdate, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption } from '../lib/core.js'
+import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption } from '../lib/core.js'
 
 process.env.NODE_ENV = 'test'
 
@@ -35,17 +35,17 @@ const server = createServer(async (request, response) => {
   const rawKey = new URL(request.url, 'http://localhost').pathname.replace(/^\//, '')
   const virtualBucket = request.headers.host?.toLowerCase().startsWith('test-bucket.localhost:') ? 'test-bucket' : ''
   const key = virtualBucket !== '' && rawKey.startsWith('storage/') ? `storage/${virtualBucket}/${rawKey.slice('storage/'.length)}` : rawKey
-  if (key.startsWith('storage/')) objectStorageRequests.push({ method: request.method, key, host: request.headers.host, authorization: request.headers.authorization, payloadHash: request.headers['x-amz-content-sha256'], ifNoneMatch: request.headers['if-none-match'], forbidOverwrite: request.headers['x-oss-forbid-overwrite'] })
+  if (key.startsWith('storage/')) objectStorageRequests.push({ method: request.method, key, host: request.headers.host, authorization: request.headers.authorization, payloadHash: request.headers['x-amz-content-sha256'], ifMatch: request.headers['if-match'], ifNoneMatch: request.headers['if-none-match'], forbidOverwrite: request.headers['x-oss-forbid-overwrite'] })
   if (request.method === 'HEAD' && key.replace(/\/$/, '') === 'storage/test-bucket') { response.writeHead(200, { etag: '"bucket"' }); response.end(); return }
   if (request.method === 'PROPFIND' && key === 'DSH-Sync') { response.writeHead(404); response.end(); return }
   if (request.method === 'PROPFIND') { response.writeHead(207); response.end(); return }
   if (request.method === 'MKCOL') { response.writeHead(201); response.end(); return }
   if (request.method === 'PUT') {
     const chunks = []; for await (const chunk of request) chunks.push(chunk)
-    if ((request.headers['if-none-match'] === '*' || request.headers['x-oss-forbid-overwrite'] === 'true') && request.headers.authorization?.includes('key-oss/')) { response.writeHead(400); response.end(); return }
+    if (request.headers.authorization?.includes('key-oss/') && request.method === 'PUT' && key.endsWith('/snapshots/latest.json.gz') && (request.headers['if-match'] !== undefined || request.headers['if-none-match'] !== undefined || request.headers['x-oss-forbid-overwrite'] !== undefined)) { response.writeHead(400); response.end(); return }
     objects.set(key, Buffer.concat(chunks)); response.writeHead(201); response.end(); return
   }
-  if (request.method === 'GET' && objects.has(key)) { response.writeHead(200); response.end(objects.get(key)); return }
+  if (request.method === 'GET' && objects.has(key)) { response.writeHead(200, { etag: '"snapshot"' }); response.end(objects.get(key)); return }
   response.writeHead(404); response.end()
 })
 server.listen(0, '127.0.0.1')
@@ -183,6 +183,19 @@ const s3Settings = await connectProvider({ provider: objectProvider('s3') }, { h
 assert.equal(s3Settings.provider.type, 's3')
 assert.equal(s3Settings.provider.secretAccessKey, '<stored-locally>')
 await assert.rejects(() => connectProvider({ provider: { ...objectProvider('oss'), secretAccessKey: '' } }, { home: objectHome }), /secret/i)
+await connectProvider({ provider: objectProvider('oss') }, { home: objectHome })
+await connectProvider({ provider: objectProvider('cos') }, { home: objectHome })
+const reusedOss = await connectProvider({ provider: { ...objectProvider('oss'), secretAccessKey: '' } }, { home: objectHome })
+assert.equal(reusedOss.provider.secretAccessKey, '<stored-locally>')
+const savedProviders = (await getPublicSettings(objectHome)).savedProviders
+assert.equal(savedProviders.oss.endpoint, objectEndpoint)
+assert.equal(savedProviders.oss.secretStored, true)
+assert.equal(savedProviders.cos.secretStored, true)
+const clearedProviders = await clearSyncProvider({ home: objectHome })
+assert.equal(clearedProviders.provider.type, 'none')
+assert.equal(clearedProviders.savedProviders.oss.bucket, 'test-bucket')
+const reenabledOss = await connectProvider({ provider: { ...objectProvider('oss'), secretAccessKey: '' } }, { home: objectHome })
+assert.equal(reenabledOss.provider.secretAccessKey, '<stored-locally>')
 await assert.rejects(() => connectProvider({ provider: { ...objectProvider('s3'), endpoint: `${objectEndpoint}?unsafe=true` } }, { home: objectHome }), /query parameters/i)
 await assert.rejects(() => connectProvider({ provider: { ...objectProvider('s3'), prefix: '../unsafe' } }, { home: objectHome }), /prefix/i)
 const ossFirstSyncHome = await mkdtemp(join(tmpdir(), 'dsh-sync-oss-first-sync-'))
@@ -193,9 +206,11 @@ await writeFile(join(ossFirstSyncProfile, 'cordis.patch.yml'), '[]\n')
 await connectProvider({ provider: objectProvider('oss') }, { home: ossFirstSyncHome })
 const ossFirstSync = await synchronizeSnapshots({ home: ossFirstSyncHome, strategy: 'local' })
 assert.equal(ossFirstSync.direction, 'uploaded')
-const ossSnapshotRequest = objectStorageRequests.find(request => request.method === 'PUT' && request.authorization?.includes('key-oss/') && request.key.endsWith('/snapshots/latest.json.gz'))
-assert.equal(ossSnapshotRequest.ifNoneMatch, undefined)
-assert.equal(ossSnapshotRequest.forbidOverwrite, undefined)
+const ossSecondSync = await synchronizeSnapshots({ home: ossFirstSyncHome, strategy: 'local' })
+assert.equal(ossSecondSync.direction, 'uploaded')
+const ossSnapshotRequests = objectStorageRequests.filter(request => request.method === 'PUT' && request.authorization?.includes('key-oss/') && request.key.endsWith('/snapshots/latest.json.gz'))
+assert.equal(ossSnapshotRequests.length, 2)
+assert.ok(ossSnapshotRequests.every(request => request.ifMatch === undefined && request.ifNoneMatch === undefined && request.forbidOverwrite === undefined))
 for (const type of ['s3', 'oss', 'cos', 'minio']) {
   const connected = await connectProvider({ provider: objectProvider(type) }, { home: objectHome })
   assert.equal(connected.provider.type, type)

@@ -77,7 +77,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 ### 方式二：通过 npm 安装（推荐）
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.4
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.7
 ```
 
 ### 方式三：通过聚合包（.tgz）安装
@@ -85,7 +85,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.4
 从 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest) 下载最新的 `dickpy-dsh-cloud-sync-*.tgz`，然后执行：
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.4.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.7.tgz
 ```
 
 适合无法直接访问 npm registry 的内网或离线环境。
@@ -110,6 +110,8 @@ dsh plugin --profile web add .
 4. 换到新设备后，在 **同步状态** 查看插件安装情况；可先预览远端快照，再应用恢复。
 
 > 同一时间只有一个同步渠道处于启用状态。连接并启用新的渠道时，旧渠道会自动停用。
+
+每种云服务会分别保存自己的 Endpoint、Region、Bucket、对象前缀和 Access Key ID。切换回已保存的渠道时，表单会自动填充这些信息；如果该渠道的密钥已保存在本机，密钥框留空即可直接复用，不需要再次输入。
 
 ## 支持的同步渠道
 

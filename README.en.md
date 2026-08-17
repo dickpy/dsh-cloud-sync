@@ -63,7 +63,7 @@ Send the following to DSH or Codex, and let it install and restart DSH Web:
 ### 2. Install via npm (recommended)
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.4
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.7
 ```
 
 ### 3. Install from a bundled `.tgz`
@@ -71,7 +71,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.4
 Download the latest `dickpy-dsh-cloud-sync-*.tgz` from [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest), then run:
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.4.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.7.tgz
 ```
 
 Useful in intranet or offline environments without direct npm registry access.
@@ -93,6 +93,8 @@ For modifying the plugin, debugging, or contributing.
 1. Select **Connect**, choose WebDAV, S3, OSS, COS, or MinIO, then enter its endpoint and credentials.
 2. Save the connection. Selecting and saving another provider replaces the active provider.
 3. Select **Sync**. It automatically archives every reachable local source plugin without retaining its old drive path. `.dshsyncignore` can exclude additional file or directory names.
+
+Each provider keeps its own endpoint, region, bucket, prefix, and Access Key ID. When you return to a saved provider, the form is prefilled. If its secret is already stored locally, leave the secret field empty to reuse it.
 
 ### 6. Restore on a new device
 
