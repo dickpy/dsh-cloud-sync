@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.20.3 - 2026-08-17
+
+- Retry transient GitHub Gist `429` and `5xx` API failures with exponential backoff and `Retry-After` support before reporting a clear temporary-service error.
+
 ## 0.20.2 - 2026-08-17
 
 - Redesign the GitHub Gist authorization dialog around the device-code workflow, with a dedicated code card, copy action, GitHub handoff, and Token fallback.

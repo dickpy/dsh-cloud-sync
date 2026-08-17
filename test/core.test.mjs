@@ -255,6 +255,7 @@ const originalFetch = globalThis.fetch
 const gistId = 'a'.repeat(20)
 const gistFiles = {}
 let gistVersion = 1
+let gistPostAttempts = 0
 globalThis.fetch = async (input, init = {}) => {
   const url = String(input)
   const method = init.method ?? 'GET'
@@ -268,6 +269,8 @@ globalThis.fetch = async (input, init = {}) => {
   if (url === 'https://api.github.com/user' && method === 'GET') return new Response(JSON.stringify({ login: 'tester' }), { headers: { etag } })
   if (url === 'https://api.github.com/gists' && method === 'POST') {
     assert.match(init.headers.authorization, /^Bearer github-test-token$/)
+    gistPostAttempts += 1
+    if (gistPostAttempts === 1) return new Response(JSON.stringify({ message: 'temporary service issue' }), { status: 503 })
     Object.assign(gistFiles, JSON.parse(init.body).files)
     return new Response(JSON.stringify({ id: gistId, files: gistFiles }), { status: 201, headers: { etag } })
   }
@@ -286,6 +289,7 @@ globalThis.fetch = async (input, init = {}) => {
 try {
   const gistSettings = await connectProvider({ provider: { type: 'gist', gistId: '', token: 'github-test-token' } }, { home: gistHome })
   assert.equal(gistSettings.provider.type, 'gist')
+  assert.equal(gistPostAttempts, 2)
   assert.equal(gistSettings.provider.gistId, gistId)
   assert.equal(gistSettings.provider.token, '<stored-locally>')
   const gistPush = await synchronizeSnapshots({ home: gistHome, strategy: 'local' })
