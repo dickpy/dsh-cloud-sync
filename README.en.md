@@ -63,7 +63,7 @@ Send the following to DSH or Codex, and let it install and restart DSH Web:
 ### 2. Install via npm (recommended)
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.2
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.3
 ```
 
 ### 3. Install from a bundled `.tgz`
@@ -71,7 +71,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.19.2
 Download the latest `dickpy-dsh-cloud-sync-*.tgz` from [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest), then run:
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.2.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.19.3.tgz
 ```
 
 Useful in intranet or offline environments without direct npm registry access.

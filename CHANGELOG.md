@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.19.3 — 2026-08-17
+
+- Fix Alibaba Cloud OSS first-sync uploads by using its overwrite-prevention header instead of the unsupported `If-None-Match: *` condition.
+
 ## 0.19.2 — 2026-08-16
 
 - 重构云同步界面以匹配紧凑的三页工作台：云服务、配置与历史、同步状态。

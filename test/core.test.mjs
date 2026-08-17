@@ -35,12 +35,16 @@ const server = createServer(async (request, response) => {
   const rawKey = new URL(request.url, 'http://localhost').pathname.replace(/^\//, '')
   const virtualBucket = request.headers.host?.toLowerCase().startsWith('test-bucket.localhost:') ? 'test-bucket' : ''
   const key = virtualBucket !== '' && rawKey.startsWith('storage/') ? `storage/${virtualBucket}/${rawKey.slice('storage/'.length)}` : rawKey
-  if (key.startsWith('storage/')) objectStorageRequests.push({ method: request.method, key, host: request.headers.host, authorization: request.headers.authorization, payloadHash: request.headers['x-amz-content-sha256'] })
+  if (key.startsWith('storage/')) objectStorageRequests.push({ method: request.method, key, host: request.headers.host, authorization: request.headers.authorization, payloadHash: request.headers['x-amz-content-sha256'], ifNoneMatch: request.headers['if-none-match'], forbidOverwrite: request.headers['x-oss-forbid-overwrite'] })
   if (request.method === 'HEAD' && key.replace(/\/$/, '') === 'storage/test-bucket') { response.writeHead(200, { etag: '"bucket"' }); response.end(); return }
   if (request.method === 'PROPFIND' && key === 'DSH-Sync') { response.writeHead(404); response.end(); return }
   if (request.method === 'PROPFIND') { response.writeHead(207); response.end(); return }
   if (request.method === 'MKCOL') { response.writeHead(201); response.end(); return }
-  if (request.method === 'PUT') { const chunks = []; for await (const chunk of request) chunks.push(chunk); objects.set(key, Buffer.concat(chunks)); response.writeHead(201); response.end(); return }
+  if (request.method === 'PUT') {
+    const chunks = []; for await (const chunk of request) chunks.push(chunk)
+    if (request.headers['if-none-match'] === '*' && request.headers.authorization?.includes('key-oss/')) { response.writeHead(400); response.end(); return }
+    objects.set(key, Buffer.concat(chunks)); response.writeHead(201); response.end(); return
+  }
   if (request.method === 'GET' && objects.has(key)) { response.writeHead(200); response.end(objects.get(key)); return }
   response.writeHead(404); response.end()
 })
@@ -166,6 +170,17 @@ assert.equal(s3Settings.provider.secretAccessKey, '<stored-locally>')
 await assert.rejects(() => connectProvider({ provider: { ...objectProvider('oss'), secretAccessKey: '' } }, { home: objectHome }), /secret/i)
 await assert.rejects(() => connectProvider({ provider: { ...objectProvider('s3'), endpoint: `${objectEndpoint}?unsafe=true` } }, { home: objectHome }), /query parameters/i)
 await assert.rejects(() => connectProvider({ provider: { ...objectProvider('s3'), prefix: '../unsafe' } }, { home: objectHome }), /prefix/i)
+const ossFirstSyncHome = await mkdtemp(join(tmpdir(), 'dsh-sync-oss-first-sync-'))
+const ossFirstSyncProfile = join(ossFirstSyncHome, 'profiles', 'web')
+await mkdir(ossFirstSyncProfile, { recursive: true })
+await writeFile(join(ossFirstSyncProfile, 'package.json'), JSON.stringify({ name: 'dsh-profile-web', dependencies: {}, dsh: { profile: { bundles: [] } } }))
+await writeFile(join(ossFirstSyncProfile, 'cordis.patch.yml'), '[]\n')
+await connectProvider({ provider: objectProvider('oss') }, { home: ossFirstSyncHome })
+const ossFirstSync = await synchronizeSnapshots({ home: ossFirstSyncHome, strategy: 'local' })
+assert.equal(ossFirstSync.direction, 'uploaded')
+const ossSnapshotRequest = objectStorageRequests.find(request => request.method === 'PUT' && request.authorization?.includes('key-oss/') && request.key.endsWith('/snapshots/latest.json.gz'))
+assert.equal(ossSnapshotRequest.ifNoneMatch, undefined)
+assert.equal(ossSnapshotRequest.forbidOverwrite, 'true')
 for (const type of ['s3', 'oss', 'cos', 'minio']) {
   const connected = await connectProvider({ provider: objectProvider(type) }, { home: objectHome })
   assert.equal(connected.provider.type, type)
