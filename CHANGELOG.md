@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.19.8 - 2026-08-17
+
+- Create a missing WebDAV target directory automatically on connection or first sync, including nested, space-containing, and non-ASCII paths.
+- Retry WebDAV reads and collection creation once after an HTTP 409 response from providers such as Nutstore.
+- Keep self-update and credential-storage test fixtures aligned with the current package behavior.
+
 ## 0.19.7 — 2026-08-17
 
 - Fix repeated OSS syncs by omitting conditional upload headers unsupported by the Alibaba Cloud S3-compatible endpoint.

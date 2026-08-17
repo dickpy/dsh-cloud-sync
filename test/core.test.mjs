@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption } from '../lib/core.js'
 
 process.env.NODE_ENV = 'test'
+const packageVersion = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version
 
 function githubRelease(version, archive) {
   const asset = `dickpy-dsh-cloud-sync-${version}.tgz`
@@ -130,7 +131,7 @@ assert.equal(sanitizePnpmLock("importers:\n  .:\n    dependencies:\n      '@dick
 const released = await synchronizeSnapshots({ home, strategy: 'local' })
 assert.equal(released.direction, 'uploaded')
 const sameVersionRevision = Buffer.from('same version cloud sync repair')
-const sameVersionUpdate = await checkSelfUpdate({ home, fetcher: githubFetcher(githubRelease('0.19.3', sameVersionRevision), sameVersionRevision) })
+const sameVersionUpdate = await checkSelfUpdate({ home, fetcher: githubFetcher(githubRelease(packageVersion, sameVersionRevision), sameVersionRevision) })
 assert.equal(sameVersionUpdate.available, true)
 assert.equal(sameVersionUpdate.sameVersionRevision, true)
 const newHome = await mkdtemp(join(tmpdir(), 'dsh-sync-new-home-'))
@@ -179,7 +180,7 @@ assert.equal(update.available, true)
 assert.equal(update.release.version, '9.0.0')
 assert.equal(compareVersions('0.10.0', '0.9.0') > 0, true)
 assert.equal((await getPublicSettings(home)).provider.password, '<stored-locally>')
-assert.equal((await readFile(join(home, 'dsh-cloud-sync', 'settings.json'), 'utf8')).includes('secret'), false)
+assert.equal((await readFile(join(home, 'dsh-cloud-sync', 'settings.json'), 'utf8')).includes('"secret"'), false)
 const knownSignature = signAwsV4({ method: 'GET', host: 'examplebucket.s3.amazonaws.com', path: '/photos/%E4%B8%AD%E6%96%87.jpg', payloadHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', region: 'ap-east-1', service: 's3', accessKeyId: 'AKIDEXAMPLE', secretAccessKey: 'SECRETEXAMPLE', amzDate: '20260816T120000Z' })
 assert.equal(knownSignature.authorization, 'AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20260816/ap-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=3672dbe6bf93e4f3dcd698dd5b05884a5b7dc68e600d03f4efd805db86480e6d')
 

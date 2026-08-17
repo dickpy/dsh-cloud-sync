@@ -96,6 +96,8 @@ For modifying the plugin, debugging, or contributing.
 
 Each provider keeps its own endpoint, region, bucket, prefix, and Access Key ID. When you return to a saved provider, the form is prefilled. If its secret is already stored locally, leave the secret field empty to reuse it.
 
+For WebDAV, a missing target directory is created automatically when the connection is saved or the first sync runs, including nested paths and directory names containing spaces or non-ASCII characters. No manual pre-creation is required.
+
 ### 6. Restore on a new device
 
 Install this Sync bundle and configure the same target, then:
