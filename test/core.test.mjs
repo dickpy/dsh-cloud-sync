@@ -5,7 +5,7 @@ import { once } from 'node:events'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { checkSelfUpdate, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, status, synchronizeSnapshots, unlockEncryption } from '../lib/core.js'
+import { checkSelfUpdate, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption } from '../lib/core.js'
 
 process.env.NODE_ENV = 'test'
 
@@ -42,7 +42,7 @@ const server = createServer(async (request, response) => {
   if (request.method === 'MKCOL') { response.writeHead(201); response.end(); return }
   if (request.method === 'PUT') {
     const chunks = []; for await (const chunk of request) chunks.push(chunk)
-    if (request.headers['if-none-match'] === '*' && request.headers.authorization?.includes('key-oss/')) { response.writeHead(400); response.end(); return }
+    if ((request.headers['if-none-match'] === '*' || request.headers['x-oss-forbid-overwrite'] === 'true') && request.headers.authorization?.includes('key-oss/')) { response.writeHead(400); response.end(); return }
     objects.set(key, Buffer.concat(chunks)); response.writeHead(201); response.end(); return
   }
   if (request.method === 'GET' && objects.has(key)) { response.writeHead(200); response.end(objects.get(key)); return }
@@ -71,12 +71,27 @@ assert.equal(inventory.plugins.find(plugin => plugin.name === '@example/local').
 const marketplace = join(profile, 'node_modules', 'dsh-plugin-marketplace')
 await mkdir(marketplace, { recursive: true })
 await writeFile(join(marketplace, 'package.json'), JSON.stringify({ name: 'dsh-plugin-marketplace', version: '1.0.0' }))
-await writeFile(join(profile, 'cordis.patch.yml'), '- insert:\n    - id: plugin-marketplace\n      name: dsh-plugin-marketplace\n')
+await writeFile(join(profile, 'cordis.patch.yml'), '- insert:\n    - id: plugin-marketplace\n      name: dsh-plugin-marketplace\n    - id: keep-plugin\n      name: keep-plugin\n')
 const configuredOnly = await getSyncInventory({ home })
 assert.equal(configuredOnly.plugins.find(plugin => plugin.name === 'dsh-plugin-marketplace').configurationOnly, true)
 const adopted = await installConfiguredPlugin({ home, packageName: 'dsh-plugin-marketplace' })
 assert.equal(adopted.syncRequired, true)
 assert.match(JSON.parse(await readFile(join(profile, 'package.json'), 'utf8')).dependencies['dsh-plugin-marketplace'], /^file:/)
+await writeFile(join(profile, 'pnpm.cmd'), '@echo off\r\nnode "%~dp0fake-pnpm.mjs" %*\r\n')
+await writeFile(join(profile, 'fake-pnpm.mjs'), `import { readFile, writeFile } from 'node:fs/promises'\nconst path = new URL('./package.json', import.meta.url)\nconst manifest = JSON.parse(await readFile(path, 'utf8'))\ndelete manifest.dependencies[process.argv.at(-1)]\nawait writeFile(path, JSON.stringify(manifest))\n`)
+const uninstalled = await uninstallPlugin({ home, packageName: 'dsh-plugin-marketplace' })
+assert.equal(uninstalled.patchCleanup.removed, 1)
+assert.equal(uninstalled.reconciliation.bundles.includes('dsh-plugin-marketplace'), false)
+assert.equal(JSON.parse(await readFile(join(profile, 'package.json'), 'utf8')).dependencies['dsh-plugin-marketplace'], undefined)
+const cleanedPatch = await readFile(join(profile, 'cordis.patch.yml'), 'utf8')
+assert.equal(cleanedPatch.includes('dsh-plugin-marketplace'), false)
+assert.equal(cleanedPatch.includes('keep-plugin'), true)
+const restoredManifestForEmptyPatch = JSON.parse(await readFile(join(profile, 'package.json'), 'utf8'))
+restoredManifestForEmptyPatch.dependencies['dsh-plugin-marketplace'] = 'file:C:/restored/marketplace'
+await writeFile(join(profile, 'package.json'), JSON.stringify(restoredManifestForEmptyPatch))
+await writeFile(join(profile, 'cordis.patch.yml'), '- insert:\n    - id: plugin-marketplace\n      name: dsh-plugin-marketplace\n')
+await uninstallPlugin({ home, packageName: 'dsh-plugin-marketplace' })
+assert.equal(await readFile(join(profile, 'cordis.patch.yml'), 'utf8'), '[]\n')
 const preview = await pullSnapshot({ home })
 assert.equal(preview.applied, false)
 assert.ok(preview.restoredSources['@example/local'])
@@ -104,7 +119,7 @@ assert.equal(sanitizePnpmLock("importers:\n  .:\n    dependencies:\n      '@dick
 const released = await synchronizeSnapshots({ home, strategy: 'local' })
 assert.equal(released.direction, 'uploaded')
 const sameVersionRevision = Buffer.from('same version cloud sync repair')
-const sameVersionUpdate = await checkSelfUpdate({ home, fetcher: githubFetcher(githubRelease('0.19.2', sameVersionRevision), sameVersionRevision) })
+const sameVersionUpdate = await checkSelfUpdate({ home, fetcher: githubFetcher(githubRelease('0.19.3', sameVersionRevision), sameVersionRevision) })
 assert.equal(sameVersionUpdate.available, true)
 assert.equal(sameVersionUpdate.sameVersionRevision, true)
 const newHome = await mkdtemp(join(tmpdir(), 'dsh-sync-new-home-'))
@@ -180,7 +195,7 @@ const ossFirstSync = await synchronizeSnapshots({ home: ossFirstSyncHome, strate
 assert.equal(ossFirstSync.direction, 'uploaded')
 const ossSnapshotRequest = objectStorageRequests.find(request => request.method === 'PUT' && request.authorization?.includes('key-oss/') && request.key.endsWith('/snapshots/latest.json.gz'))
 assert.equal(ossSnapshotRequest.ifNoneMatch, undefined)
-assert.equal(ossSnapshotRequest.forbidOverwrite, 'true')
+assert.equal(ossSnapshotRequest.forbidOverwrite, undefined)
 for (const type of ['s3', 'oss', 'cos', 'minio']) {
   const connected = await connectProvider({ provider: objectProvider(type) }, { home: objectHome })
   assert.equal(connected.provider.type, type)

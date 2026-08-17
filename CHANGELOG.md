@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.19.4 — 2026-08-17
+
+- Fix OSS S3-compatible uploads by omitting unsupported first-create conditional headers.
+
 ## 0.19.3 — 2026-08-17
 
 - Fix Alibaba Cloud OSS first-sync uploads by using its overwrite-prevention header instead of the unsupported `If-None-Match: *` condition.
