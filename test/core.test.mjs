@@ -31,15 +31,17 @@ const profile = join(home, 'profiles', 'web')
 const localPlugin = join(home, 'work', 'imagegen')
 const objects = new Map()
 const objectStorageRequests = []
+const webdavMissing = new Set(['DSH-Sync'])
+const webdavMkcols = []
 const server = createServer(async (request, response) => {
   const rawKey = new URL(request.url, 'http://localhost').pathname.replace(/^\//, '')
   const virtualBucket = request.headers.host?.toLowerCase().startsWith('test-bucket.localhost:') ? 'test-bucket' : ''
   const key = virtualBucket !== '' && rawKey.startsWith('storage/') ? `storage/${virtualBucket}/${rawKey.slice('storage/'.length)}` : rawKey
   if (key.startsWith('storage/')) objectStorageRequests.push({ method: request.method, key, host: request.headers.host, authorization: request.headers.authorization, payloadHash: request.headers['x-amz-content-sha256'], ifMatch: request.headers['if-match'], ifNoneMatch: request.headers['if-none-match'], forbidOverwrite: request.headers['x-oss-forbid-overwrite'] })
   if (request.method === 'HEAD' && key.replace(/\/$/, '') === 'storage/test-bucket') { response.writeHead(200, { etag: '"bucket"' }); response.end(); return }
-  if (request.method === 'PROPFIND' && key === 'DSH-Sync') { response.writeHead(404); response.end(); return }
+  if (request.method === 'PROPFIND' && webdavMissing.has(key)) { response.writeHead(404); response.end(); return }
   if (request.method === 'PROPFIND') { response.writeHead(207); response.end(); return }
-  if (request.method === 'MKCOL') { response.writeHead(201); response.end(); return }
+  if (request.method === 'MKCOL') { webdavMkcols.push(key); webdavMissing.delete(key); response.writeHead(201); response.end(); return }
   if (request.method === 'PUT') {
     const chunks = []; for await (const chunk of request) chunks.push(chunk)
     if (request.headers.authorization?.includes('key-oss/') && request.method === 'PUT' && key.endsWith('/snapshots/latest.json.gz') && (request.headers['if-match'] !== undefined || request.headers['if-none-match'] !== undefined || request.headers['x-oss-forbid-overwrite'] !== undefined)) { response.writeHead(400); response.end(); return }
@@ -58,6 +60,15 @@ await writeFile(join(localPlugin, 'package.json'), JSON.stringify({ name: '@exam
 await writeFile(join(localPlugin, 'cordis.patch.yml'), '[]\n')
 await writeFile(join(localPlugin, 'main.js'), 'export const ok = true\n')
 await connectWebDav({ provider: { type: 'webdav', url: `http://127.0.0.1:${port}/DSH-Sync`, username: 'test', password: 'secret', allowInsecure: true } }, { home })
+assert.deepEqual(webdavMkcols, ['DSH-Sync'])
+const nestedHome = await mkdtemp(join(tmpdir(), 'dsh-sync-nested-'))
+webdavMissing.add('dav/DSH-Sync')
+await connectWebDav({ provider: { type: 'webdav', url: `http://127.0.0.1:${port}/dav/DSH-Sync`, username: 'test', password: 'secret', allowInsecure: true } }, { home: nestedHome })
+assert.deepEqual(webdavMkcols.slice(-1), ['dav/DSH-Sync'])
+assert.equal(webdavMkcols.includes('dav'), false)
+webdavMissing.add('dav/%E4%BA%91%E5%90%8C%E6%AD%A5/%E6%B5%8B%E8%AF%95%20%E7%9B%AE%E5%BD%95')
+await connectWebDav({ provider: { type: 'webdav', url: `http://127.0.0.1:${port}/dav/%E4%BA%91%E5%90%8C%E6%AD%A5/%E6%B5%8B%E8%AF%95%20%E7%9B%AE%E5%BD%95`, username: 'test', password: 'secret', allowInsecure: true } }, { home: nestedHome })
+assert.deepEqual(webdavMkcols.slice(-1), ['dav/%E4%BA%91%E5%90%8C%E6%AD%A5/%E6%B5%8B%E8%AF%95%20%E7%9B%AE%E5%BD%95'])
 const snapshot = await createSnapshot({ home })
 assert.equal(snapshot.snapshot.profiles.length, 1)
 assert.equal(snapshot.snapshot.sources.length, 0)
