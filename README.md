@@ -78,7 +78,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 ### 方式二：通过 npm 安装（推荐）
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.0
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.1
 ```
 
 ### 方式三：通过聚合包（.tgz）安装
@@ -86,7 +86,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.0
 从 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest) 下载最新的 `dickpy-dsh-cloud-sync-*.tgz`，然后执行：
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.0.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.1.tgz
 ```
 
 适合无法直接访问 npm registry 的内网或离线环境。

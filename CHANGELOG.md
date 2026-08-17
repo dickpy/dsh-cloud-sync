@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.20.1 - 2026-08-17
+
+- Repair `cordis.patch.yml` snapshots containing an empty `[]` followed by top-level patch rows, which DSH rejects as invalid YAML after a skin manager writes its generated entries.
+
 ## 0.20.0 - 2026-08-17
 
 - Add GitHub Gist as a sync provider. It creates or binds one managed secret Gist and keeps the existing snapshot, encryption, conflict, and rollback workflows.

@@ -5,7 +5,7 @@ import { once } from 'node:events'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pollGithubDeviceAuthorization, pullSnapshot, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, startGithubDeviceAuthorization, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption } from '../lib/core.js'
+import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pollGithubDeviceAuthorization, pullSnapshot, sanitizeCordisPatch, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, startGithubDeviceAuthorization, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption } from '../lib/core.js'
 
 process.env.NODE_ENV = 'test'
 const packageVersion = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version
@@ -118,6 +118,7 @@ assert.equal(installDependencySpec('@example/remote', '0.1.13'), '@example/remot
 assert.equal(installDependencySpec('@example/local', 'file:C:/restored/plugin'), '@example/local@file:C:/restored/plugin')
 assert.equal(lockedGitSpec({ files: { 'pnpm-lock.yaml': Buffer.from('importers:\n  .:\n    dependencies:\n      dsh-better-sidebar:\n        specifier: github:omdsh-dev/DSH-better-sidebar\n        version: https://codeload.github.com/omdsh-dev/DSH-better-sidebar/tar.gz/locked-commit\n').toString('base64') } }, 'dsh-better-sidebar', 'github:omdsh-dev/DSH-better-sidebar'), 'https://codeload.github.com/omdsh-dev/DSH-better-sidebar/tar.gz/locked-commit')
 assert.equal(sanitizePnpmWorkspace('packages:\n  - .\nstoreDir: C:/other-user/store\nallowBuilds:\n  demo: true\n').includes('storeDir:'), false)
+assert.equal(sanitizeCordisPatch('# profile patch\n[]\n# managed\n- id: ui-skin-demo\n  disabled: true\n').includes('\n[]\n'), false)
 const selfArchive = join(home, 'dickpy-dsh-cloud-sync-0.9.0.tgz')
 await writeFile(selfArchive, 'cloud-sync package')
 const sourceManifest = JSON.parse(await readFile(join(profile, 'package.json'), 'utf8'))
