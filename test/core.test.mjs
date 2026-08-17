@@ -259,7 +259,7 @@ let gistPostAttempts = 0
 globalThis.fetch = async (input, init = {}) => {
   const url = String(input)
   const method = init.method ?? 'GET'
-  const etag = `\"gist-${gistVersion}\"`
+  const etag = `W/\"gist-${gistVersion}\"`
   if (url === 'https://github.com/login/device/code' && method === 'POST') {
     assert.match(String(init.body), /client_id=Iv1\.test-client/)
     assert.match(String(init.body), /scope=gist/)
@@ -276,13 +276,13 @@ globalThis.fetch = async (input, init = {}) => {
   }
   if (url === `https://api.github.com/gists/${gistId}` && method === 'GET') return new Response(JSON.stringify({ id: gistId, files: gistFiles }), { headers: { etag } })
   if (url === `https://api.github.com/gists/${gistId}` && method === 'PATCH') {
-    assert.equal(init.headers['if-match'], etag)
+    assert.equal(init.headers['if-match'], undefined)
     for (const [name, file] of Object.entries(JSON.parse(init.body).files)) {
       if (file === null) delete gistFiles[name]
       else gistFiles[name] = { content: file.content, truncated: false }
     }
     gistVersion += 1
-    return new Response(JSON.stringify({ id: gistId, files: gistFiles }), { headers: { etag: `\"gist-${gistVersion}\"` } })
+    return new Response(JSON.stringify({ id: gistId, files: gistFiles }), { headers: { etag: `W/\"gist-${gistVersion}\"` } })
   }
   throw new Error(`Unexpected GitHub test request: ${method} ${url}`)
 }
@@ -290,11 +290,12 @@ try {
   const gistSettings = await connectProvider({ provider: { type: 'gist', gistId: '', token: 'github-test-token' } }, { home: gistHome })
   assert.equal(gistSettings.provider.type, 'gist')
   assert.equal(gistPostAttempts, 2)
+  assert.equal(gistSettings.syncScope.sources, false)
   assert.equal(gistSettings.provider.gistId, gistId)
   assert.equal(gistSettings.provider.token, '<stored-locally>')
   const gistPush = await synchronizeSnapshots({ home: gistHome, strategy: 'local' })
   assert.equal(gistPush.direction, 'uploaded')
-  assert.deepEqual(gistPush.sources, ['@example/gist-local'])
+  assert.deepEqual(gistPush.sources, [])
   assert.equal((await loadRemoteSnapshot(gistHome)).schema, 'dsh-cloud-sync/v1')
   assert.equal((await getPublicSettings(gistHome)).savedProviders.gist.gistId, gistId)
   process.env.DSH_CLOUD_SYNC_GITHUB_CLIENT_ID = 'Iv1.test-client'

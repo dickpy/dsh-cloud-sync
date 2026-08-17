@@ -64,7 +64,7 @@ Send the following to DSH or Codex, and let it install and restart DSH Web:
 ### 2. Install via npm (recommended)
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.3
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.5
 ```
 
 ### 3. Install from a bundled `.tgz`
@@ -72,7 +72,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.3
 Download the latest `dickpy-dsh-cloud-sync-*.tgz` from [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest), then run:
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.3.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.5.tgz
 ```
 
 Useful in intranet or offline environments without direct npm registry access.
@@ -104,7 +104,7 @@ For WebDAV, a missing target directory is created automatically when the connect
 GitHub Gist is sufficient for configuration-only sync: profile files, dependencies, lockfiles, marketplace YAML, and history snapshots fit comfortably in one managed secret Gist.
 
 - Each Cloud Sync object is limited to approximately **700 KiB** and a managed Gist has a limit of **200 files**. Sync fails explicitly rather than truncating data.
-- Local-plugin source archives can exceed those limits. Use WebDAV or object storage for source archival, or disable source archival in the sync scope.
+- Connecting Gist automatically enables configuration-only sync, so local-plugin source archives are not uploaded. Use WebDAV or object storage when source archival is required.
 - A secret Gist is unlisted, not end-to-end private. Enable the plugin's AES-256-GCM client-side encryption for sensitive content.
 - Device authorization uses this project's GitHub OAuth App and requests only `gist` access. If the authorization service is unavailable, a token with `gist` access remains available as a fallback.
 

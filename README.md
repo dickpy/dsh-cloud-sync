@@ -78,7 +78,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 ### 方式二：通过 npm 安装（推荐）
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.3
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.5
 ```
 
 ### 方式三：通过聚合包（.tgz）安装
@@ -86,7 +86,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.3
 从 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest) 下载最新的 `dickpy-dsh-cloud-sync-*.tgz`，然后执行：
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.3.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.5.tgz
 ```
 
 适合无法直接访问 npm registry 的内网或离线环境。
@@ -120,7 +120,7 @@ GitHub Gist 很适合**不涉及本地插件源码归档**的配置同步：prof
 
 - 在设置中选择 **GitHub Gist**，复制显示的授权码并在打开的 GitHub 页面确认授权；插件会自动创建一个受管 secret Gist。
 - Gist API 的单个同步对象限制为约 **700 KiB**，受管 Gist 最多 **200 个文件**。超过限制时同步会明确失败，不会截断数据。
-- 本地插件源码归档可能超过 Gist 限制。需要同步源码时请使用 WebDAV、S3、OSS、COS 或 MinIO，或者在同步范围中关闭源码归档。
+- 连接 Gist 后会自动切换为“仅配置同步”，本地插件源码不会上传。需要同步源码时请使用 WebDAV、S3、OSS、COS 或 MinIO。
 - secret Gist 并不等同于端到端私密存储，持有链接的人可读取内容；建议启用本插件的客户端 AES-256-GCM 加密。
 
 GitHub 授权码连接会使用本项目的 OAuth App，只请求 `gist` 权限；当授权服务暂不可用时，界面会自动提供拥有 `gist` 权限的 GitHub Token 作为备用连接方式。

@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.20.5 - 2026-08-18
+
+- Do not send GitHub's weak Gist ETags in `If-Match` request headers. GitHub rejects weak validators on Gist `PATCH` requests with HTTP 400, so normal synchronization can proceed.
+
+## 0.20.4 - 2026-08-17
+
+- Make GitHub Gist configuration-only by default and enforce it during sync, preventing local-plugin source archives from exceeding Gist's 700 KiB object limit.
+
 ## 0.20.3 - 2026-08-17
 
 - Retry transient GitHub Gist `429` and `5xx` API failures with exponential backoff and `Retry-After` support before reporting a clear temporary-service error.
