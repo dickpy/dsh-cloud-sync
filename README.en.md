@@ -3,7 +3,7 @@
 # DSH Cloud Sync
 
 <p align="center">
-  <img src="docs/screenshots/hero.png" alt="DSH Cloud Sync dashboard" width="100%">
+  <img src="https://github.com/dickpy/dsh-cloud-sync/releases/download/v0.20.2/hero.png" alt="DSH Cloud Sync dashboard" width="100%">
 </p>
 
 **Portable DeepSeek Harness profile and local-plugin source synchronization**
@@ -46,9 +46,9 @@ It **never** copies sessions, attachments, pnpm cache, `node_modules`, or creden
 The settings UI follows the active DSH light, dark, and custom theme. Its three tabs stay available while scrolling: Cloud services, Configuration & history, and Sync status.
 
 <p align="center">
-  <img src="docs/screenshots/cloud-services.png" alt="Cloud services: WebDAV, S3, OSS, COS, and MinIO" width="31%">
-  <img src="docs/screenshots/configuration-history.png" alt="Configuration and history: sync policy and snapshots" width="31%">
-  <img src="docs/screenshots/sync-status.png" alt="Sync status: remote availability and installed plugins" width="31%">
+  <img src="https://github.com/dickpy/dsh-cloud-sync/releases/download/v0.20.2/cloud-services.png" alt="Cloud services: WebDAV, S3, OSS, COS, and MinIO" width="31%">
+  <img src="https://github.com/dickpy/dsh-cloud-sync/releases/download/v0.20.2/configuration-history.png" alt="Configuration and history: sync policy and snapshots" width="31%">
+  <img src="https://github.com/dickpy/dsh-cloud-sync/releases/download/v0.20.2/sync-status.png" alt="Sync status: remote availability and installed plugins" width="31%">
 </p>
 
 ## Quick start
@@ -64,7 +64,7 @@ Send the following to DSH or Codex, and let it install and restart DSH Web:
 ### 2. Install via npm (recommended)
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.1
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.2
 ```
 
 ### 3. Install from a bundled `.tgz`
@@ -72,7 +72,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.1
 Download the latest `dickpy-dsh-cloud-sync-*.tgz` from [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest), then run:
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.1.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.2.tgz
 ```
 
 Useful in intranet or offline environments without direct npm registry access.
@@ -106,7 +106,7 @@ GitHub Gist is sufficient for configuration-only sync: profile files, dependenci
 - Each Cloud Sync object is limited to approximately **700 KiB** and a managed Gist has a limit of **200 files**. Sync fails explicitly rather than truncating data.
 - Local-plugin source archives can exceed those limits. Use WebDAV or object storage for source archival, or disable source archival in the sync scope.
 - A secret Gist is unlisted, not end-to-end private. Enable the plugin's AES-256-GCM client-side encryption for sensitive content.
-- Device authorization requires a GitHub OAuth App client ID supplied as `DSH_CLOUD_SYNC_GITHUB_CLIENT_ID` to the DSH process when packaging. A token with `gist` access remains available as a fallback.
+- Device authorization uses this project's GitHub OAuth App and requests only `gist` access. If the authorization service is unavailable, a token with `gist` access remains available as a fallback.
 
 ### 6. Restore on a new device
 

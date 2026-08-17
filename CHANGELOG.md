@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.20.2 - 2026-08-17
+
+- Redesign the GitHub Gist authorization dialog around the device-code workflow, with a dedicated code card, copy action, GitHub handoff, and Token fallback.
+- Ship the public Client ID for the DSH Cloud Sync GitHub OAuth App so device-code authorization works in the published package.
+- Use immutable GitHub Release URLs for README screenshots so the images render on npm and other Markdown renderers.
+
 ## 0.20.1 - 2026-08-17
 
 - Repair `cordis.patch.yml` snapshots containing an empty `[]` followed by top-level patch rows, which DSH rejects as invalid YAML after a skin manager writes its generated entries.

@@ -3,7 +3,7 @@
 # DSH Cloud Sync
 
 <p align="center">
-  <img src="docs/screenshots/hero.png" alt="DSH Cloud Sync 云同步控制台" width="100%">
+  <img src="https://github.com/dickpy/dsh-cloud-sync/releases/download/v0.20.2/hero.png" alt="DSH Cloud Sync 云同步控制台" width="100%">
 </p>
 
 **把 DSH 的配置、插件和本地源码，安全地带到每一台设备。**
@@ -36,9 +36,9 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 设置页提供三个清晰的工作区：云服务、配置与历史、同步状态。下面是当前版本的实际界面：
 
 <p align="center">
-  <img src="docs/screenshots/cloud-services.png" alt="云服务：选择 WebDAV、S3、OSS、COS 或 MinIO" width="31%">
-  <img src="docs/screenshots/configuration-history.png" alt="配置与历史：选择同步策略并恢复快照" width="31%">
-  <img src="docs/screenshots/sync-status.png" alt="同步状态：查看远端快照和插件安装状态" width="31%">
+  <img src="https://github.com/dickpy/dsh-cloud-sync/releases/download/v0.20.2/cloud-services.png" alt="云服务：选择 WebDAV、S3、OSS、COS 或 MinIO" width="31%">
+  <img src="https://github.com/dickpy/dsh-cloud-sync/releases/download/v0.20.2/configuration-history.png" alt="配置与历史：选择同步策略并恢复快照" width="31%">
+  <img src="https://github.com/dickpy/dsh-cloud-sync/releases/download/v0.20.2/sync-status.png" alt="同步状态：查看远端快照和插件安装状态" width="31%">
 </p>
 
 ## 核心能力
@@ -60,7 +60,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 下面这张图展示了双向同步的完整链路：两台设备围绕云端快照仓库同步，保留历史、支持回滚，并可按智能合并、云端优先或本地优先执行。
 
 <p align="center">
-  <img src="docs/screenshots/sync-workflow.png" alt="双向云同步工作原理：两台设备、云端快照、历史恢复和插件更新" width="100%">
+  <img src="https://github.com/dickpy/dsh-cloud-sync/releases/download/v0.20.2/sync-workflow.png" alt="双向云同步工作原理：两台设备、云端快照、历史恢复和插件更新" width="100%">
 </p>
 
 目标设备只需要相同的同步渠道和 DSH profile。恢复会先备份当前 profile，再写入快照；依赖安装等到完全重启 DSH 后执行，避免覆盖正在运行的 bundle。
@@ -78,7 +78,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 ### 方式二：通过 npm 安装（推荐）
 
 ```powershell
-dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.1
+dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.2
 ```
 
 ### 方式三：通过聚合包（.tgz）安装
@@ -86,7 +86,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync@0.20.1
 从 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest) 下载最新的 `dickpy-dsh-cloud-sync-*.tgz`，然后执行：
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.1.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.2.tgz
 ```
 
 适合无法直接访问 npm registry 的内网或离线环境。
@@ -123,7 +123,7 @@ GitHub Gist 很适合**不涉及本地插件源码归档**的配置同步：prof
 - 本地插件源码归档可能超过 Gist 限制。需要同步源码时请使用 WebDAV、S3、OSS、COS 或 MinIO，或者在同步范围中关闭源码归档。
 - secret Gist 并不等同于端到端私密存储，持有链接的人可读取内容；建议启用本插件的客户端 AES-256-GCM 加密。
 
-发布设备授权功能时，需要为本项目注册 GitHub OAuth App，并在 DSH 进程环境中提供 `DSH_CLOUD_SYNC_GITHUB_CLIENT_ID`。未配置时界面仍可使用拥有 `gist` 权限的 GitHub Token 连接。
+GitHub 授权码连接会使用本项目的 OAuth App，只请求 `gist` 权限；当授权服务暂不可用时，界面会自动提供拥有 `gist` 权限的 GitHub Token 作为备用连接方式。
 
 WebDAV 目标目录不存在时，保存连接或首次同步会自动创建该目录；嵌套目录以及包含空格或非 ASCII 字符的目录也无需手动预先创建。
 
