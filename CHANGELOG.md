@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.20.6 - 2026-08-18
+
+- Add a direct GitHub repository link to the Cloud Sync header, making it easier to report issues, suggest improvements, or star the project.
+
 ## 0.20.5 - 2026-08-18
 
 - Do not send GitHub's weak Gist ETags in `If-Match` request headers. GitHub rejects weak validators on Gist `PATCH` requests with HTTP 400, so normal synchronization can proceed.
