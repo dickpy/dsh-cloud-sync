@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.20.7 - 2026-08-20
+
+- Add Qiniu Kodo (七牛云) as an object-storage sync provider via its AWS S3-compatible API. Supports the 10 GB free tier with default region `cn-east-1` and endpoint `https://s3.cn-east-1.qiniucs.com`.
+- Use the bundled Qiniu and GitHub logo images (`logo/qiniuyun.webp`, `logo/github.webp`) for the Kodo and Gist provider cards.
+- Add a quick-jump link to each cloud service's official console (AWS S3, Aliyun OSS, Tencent COS, MinIO, Qiniu Kodo, GitHub) inside its configuration dialog.
+
 ## 0.20.6 - 2026-08-18
 
 - Add a direct GitHub repository link to the Cloud Sync header, making it easier to report issues, suggest improvements, or star the project.

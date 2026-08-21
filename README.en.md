@@ -12,7 +12,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dickpy/dsh-cloud-sync/pulls)
 
-`@dickpy/dsh-cloud-sync` · WebDAV / S3 / OSS / COS / MinIO / GitHub Gist · AES-256-GCM client-side encryption · Snapshot history & rollback
+`@dickpy/dsh-cloud-sync` · WebDAV / S3 / OSS / COS / MinIO / Qiniu Kodo / GitHub Gist · AES-256-GCM client-side encryption · Snapshot history & rollback
 
 [中文](README.md) · [Changelog](CHANGELOG.md) · [Issues](https://github.com/dickpy/dsh-cloud-sync/issues)
 
@@ -22,7 +22,7 @@
 
 ## What is it?
 
-**DSH Cloud Sync** is a [DeepSeek Harness](https://github.com/deepseek-ai/dsh) (DSH) bundle for portable profile recovery. It synchronizes small, reproducible profile files to WebDAV, S3, OSS, COS, MinIO, or GitHub Gist rather than copying `node_modules`, then lets DSH/pnpm rebuild packages on the target computer.
+**DSH Cloud Sync** is a [DeepSeek Harness](https://github.com/deepseek-ai/dsh) (DSH) bundle for portable profile recovery. It synchronizes small, reproducible profile files to WebDAV, S3, OSS, COS, MinIO, Qiniu Kodo, or GitHub Gist rather than copying `node_modules`, then lets DSH/pnpm rebuild packages on the target computer.
 
 It **never** copies sessions, attachments, pnpm cache, `node_modules`, or credentials.
 
@@ -31,7 +31,7 @@ It **never** copies sessions, attachments, pnpm cache, `node_modules`, or creden
 | Feature | Description |
 | --- | --- |
 | 📦 **Lightweight sync** | Syncs `package.json`, `pnpm-lock.yaml`, `.npmrc`, `pnpm-workspace.yaml`, `cordis.patch.yml`, `cordis.yml`, and marketplace hot-update YAML files |
-| ☁ **Storage providers** | WebDAV, Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, MinIO, and GitHub Gist; only one provider is active at a time |
+| ☁ **Storage providers** | WebDAV, Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, MinIO, Qiniu Kodo, and GitHub Gist; only one provider is active at a time |
 | 🔐 **GitHub device authorization** | Copy a device code, authorize in GitHub, and let Cloud Sync create its managed secret Gist |
 | 🔗 **Source auto-archiving** | Local-plugin source archives automatically captured from reachable `file:` / `link:` dependencies during Sync |
 | 🔒 **Client-side encryption** | Optional AES-256-GCM encryption; each object carries a fresh KDF salt; passphrase never written to disk |
@@ -91,7 +91,7 @@ For modifying the plugin, debugging, or contributing.
 
 ### 5. First backup
 
-1. Select **Connect**, choose WebDAV, S3, OSS, COS, MinIO, or GitHub Gist. Gist can be connected through a device code and will create a secret Gist automatically.
+1. Select **Connect**, choose WebDAV, S3, OSS, COS, MinIO, Qiniu Kodo, or GitHub Gist. Gist can be connected through a device code and will create a secret Gist automatically.
 2. Save the connection. Selecting and saving another provider replaces the active provider.
 3. Select **Sync**. It automatically archives every reachable local source plugin without retaining its old drive path. `.dshsyncignore` can exclude additional file or directory names.
 
@@ -141,7 +141,7 @@ Provide a passphrase (≥ 8 characters) in the Settings panel to enable:
 
 ## Safety notes
 
-- Use HTTPS for WebDAV, S3, OSS, and COS. MinIO may use HTTP on localhost or a trusted private network; public deployments should still use HTTPS;
+- Use HTTPS for WebDAV, S3, OSS, COS, and Qiniu Kodo. MinIO may use HTTP on localhost or a trusted private network; public deployments should still use HTTPS;
 - Source archives are checksummed before restoration, written under the DSH sync directory, and reject traversal paths;
 - A restore first writes the prior profile files to `~/.dsh/dsh-cloud-sync/backups/`; only the newest ten local backups are retained;
 - On Windows remembered passwords and Secret Access Keys are protected with DPAPI for the current user; on other platforms they are stored in a separate owner-only (`0600`) credentials file; `settings.json` never contains plaintext secrets;
@@ -188,7 +188,7 @@ Versioning follows `major.minor.patch`:
 ## FAQ
 
 **Q: What object-storage endpoint should I use?**
-A: Enter the service root and provide the bucket separately. S3, OSS, and COS use their regional S3-compatible endpoints; COS bucket names commonly include the APPID. MinIO endpoints may include a reverse-proxy base path.
+A: Enter the service root and provide the bucket separately. S3, OSS, COS, and Qiniu Kodo use their regional S3-compatible endpoints (Kodo's region IDs look like `cn-east-1`); COS bucket names commonly include the APPID. MinIO endpoints may include a reverse-proxy base path.
 
 **Q: Will it silently replace the running Cloud Sync?**
 A: No. Updates are always explicit — click **Update** in the settings page and restart DSH.

@@ -191,7 +191,7 @@ await mkdir(objectProfile, { recursive: true })
 await writeFile(join(objectProfile, 'package.json'), JSON.stringify({ name: 'dsh-profile-web', dependencies: {}, dsh: { profile: { bundles: [] } } }))
 await writeFile(join(objectProfile, 'cordis.patch.yml'), '[]\n')
 const objectEndpoint = `http://localhost:${port}/storage`
-const objectProvider = type => ({ type, endpoint: objectEndpoint, region: type === 'oss' ? 'cn-hangzhou' : type === 'cos' ? 'ap-guangzhou' : 'us-east-1', bucket: 'test-bucket', prefix: 'DSH-Sync', accessKeyId: `key-${type}`, secretAccessKey: `secret-${type}` })
+const objectProvider = type => ({ type, endpoint: objectEndpoint, region: type === 'oss' ? 'cn-hangzhou' : type === 'cos' ? 'ap-guangzhou' : type === 'kodo' ? 'cn-east-1' : 'us-east-1', bucket: 'test-bucket', prefix: 'DSH-Sync', accessKeyId: `key-${type}`, secretAccessKey: `secret-${type}` })
 const s3Settings = await connectProvider({ provider: objectProvider('s3') }, { home: objectHome })
 assert.equal(s3Settings.provider.type, 's3')
 assert.equal(s3Settings.provider.secretAccessKey, '<stored-locally>')
@@ -224,7 +224,7 @@ assert.equal(ossSecondSync.direction, 'uploaded')
 const ossSnapshotRequests = objectStorageRequests.filter(request => request.method === 'PUT' && request.authorization?.includes('key-oss/') && request.key.endsWith('/snapshots/latest.json.gz'))
 assert.equal(ossSnapshotRequests.length, 2)
 assert.ok(ossSnapshotRequests.every(request => request.ifMatch === undefined && request.ifNoneMatch === undefined && request.forbidOverwrite === undefined))
-for (const type of ['s3', 'oss', 'cos', 'minio']) {
+for (const type of ['s3', 'oss', 'cos', 'minio', 'kodo']) {
   const connected = await connectProvider({ provider: objectProvider(type) }, { home: objectHome })
   assert.equal(connected.provider.type, type)
   assert.equal(connected.provider.secretAccessKey, '<stored-locally>')
@@ -233,6 +233,12 @@ for (const type of ['s3', 'oss', 'cos', 'minio']) {
   assert.ok(objects.has('storage/test-bucket/DSH-Sync/snapshots/latest.json.gz'))
   assert.equal((await loadRemoteSnapshot(objectHome)).schema, 'dsh-cloud-sync/v1')
 }
+const kodoDefaults = await connectProvider({ provider: { ...objectProvider('kodo'), region: '' } }, { home: objectHome })
+assert.equal(kodoDefaults.provider.region, 'cn-east-1')
+const kodoSaved = (await getPublicSettings(objectHome)).savedProviders.kodo
+assert.equal(kodoSaved.secretStored, true)
+assert.equal(kodoSaved.region, 'cn-east-1')
+assert.ok(objectStorageRequests.some(request => request.authorization?.includes('key-kodo/') && !request.host.startsWith('test-bucket.') && request.key.startsWith('storage/test-bucket/')))
 const retainedMinio = await connectProvider({ provider: { ...objectProvider('minio'), secretAccessKey: '' } }, { home: objectHome })
 assert.equal(retainedMinio.provider.type, 'minio')
 assert.equal((await loadSettings(objectHome)).provider.secretAccessKey, 'secret-minio')

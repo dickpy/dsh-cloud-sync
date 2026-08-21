@@ -13,7 +13,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](package.json)
 [![Downloads](https://img.shields.io/github/downloads/dickpy/dsh-cloud-sync/total)](https://github.com/dickpy/dsh-cloud-sync/releases)
 
-`@dickpy/dsh-cloud-sync` · WebDAV / Amazon S3 / OSS / COS / MinIO / GitHub Gist · 快照历史 · 冲突恢复 · GitHub 自更新
+`@dickpy/dsh-cloud-sync` · WebDAV / Amazon S3 / OSS / COS / MinIO / 七牛云 Kodo / GitHub Gist · 快照历史 · 冲突恢复 · GitHub 自更新
 
 [English](README.en.md) · [变更日志](CHANGELOG.md) · [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases) · [问题反馈](https://github.com/dickpy/dsh-cloud-sync/issues)
 
@@ -28,7 +28,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 它把这件事变成一个清晰的流程：**选择任意支持的云服务，上传可重建的配置和源码归档，把依赖安装交给 DSH / pnpm，在目标设备上恢复出一致的插件环境。**
 
 - 不复制会话、附件、`node_modules`、pnpm 缓存或明文凭据。
-- 不绑定某一种云服务：WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO 和 GitHub Gist 都可以使用。
+- 不绑定某一种云服务：WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO、七牛云 Kodo 和 GitHub Gist 都可以使用。
 - 不把更新放在私有 WebDAV：插件本身通过公开 GitHub Releases 检查和安装更新。
 
 ## 实际效果
@@ -45,7 +45,7 @@ DSH Cloud Sync 的重点不是绑定某一种存储服务，而是让插件环�
 
 | 能力 | 你得到的结果 |
 | --- | --- |
-| **多云同步渠道** | WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO、GitHub Gist；同一时间只启用一个渠道，切换服务不需要改代码 |
+| **多云同步渠道** | WebDAV、Amazon S3、阿里云 OSS、腾讯云 COS、MinIO、七牛云 Kodo、GitHub Gist；同一时间只启用一个渠道，切换服务不需要改代码 |
 | **GitHub 授权连接** | 复制设备授权码并打开 GitHub 确认，无需手动创建 Gist；也可绑定已有的空 Gist |
 | **轻量可重建快照** | 同步 `package.json`、lockfile、workspace、patch 和市场热更新 YAML，而不是打包整个运行环境 |
 | **本地源码归档** | 自动发现可达的 `file:` / `link:` 插件源码，归档后换盘符、换电脑也能恢复 |
@@ -105,7 +105,7 @@ dsh plugin --profile web add .
 
 ### 第一次同步
 
-1. 打开 **云服务**，选择 WebDAV、S3、OSS、COS、MinIO 或 GitHub Gist。Gist 可通过授权码连接，授权完成后会自动创建 secret Gist。
+1. 打开 **云服务**，选择 WebDAV、S3、OSS、COS、MinIO、七牛云 Kodo 或 GitHub Gist。Gist 可通过授权码连接，授权完成后会自动创建 secret Gist。
 2. 进入 **配置与历史**，选择同步策略并点击 **开始同步**。
 3. 需要手动补充本地插件源码时，在同一页填写源码目录并点击 **备份源码**。
 4. 换到新设备后，在 **同步状态** 查看插件安装情况；可先预览远端快照，再应用恢复。
@@ -120,7 +120,7 @@ GitHub Gist 很适合**不涉及本地插件源码归档**的配置同步：prof
 
 - 在设置中选择 **GitHub Gist**，复制显示的授权码并在打开的 GitHub 页面确认授权；插件会自动创建一个受管 secret Gist。
 - Gist API 的单个同步对象限制为约 **700 KiB**，受管 Gist 最多 **200 个文件**。超过限制时同步会明确失败，不会截断数据。
-- 连接 Gist 后会自动切换为“仅配置同步”，本地插件源码不会上传。需要同步源码时请使用 WebDAV、S3、OSS、COS 或 MinIO。
+- 连接 Gist 后会自动切换为“仅配置同步”，本地插件源码不会上传。需要同步源码时请使用 WebDAV、S3、OSS、COS、MinIO 或七牛云 Kodo。
 - secret Gist 并不等同于端到端私密存储，持有链接的人可读取内容；建议启用本插件的客户端 AES-256-GCM 加密。
 
 GitHub 授权码连接会使用本项目的 OAuth App，只请求 `gist` 权限；当授权服务暂不可用时，界面会自动提供拥有 `gist` 权限的 GitHub Token 作为备用连接方式。
@@ -136,6 +136,7 @@ WebDAV 目标目录不存在时，保存连接或首次同步会自动创建该�
 | **阿里云 OSS** | 阿里云对象存储 | 使用 OSS 的 S3 兼容 Endpoint |
 | **腾讯云 COS** | 腾讯云对象存储 | Bucket 通常包含 APPID，填写对应 Region |
 | **MinIO** | 自建对象存储、内网或本地开发 | 填写 MinIO Endpoint、Bucket 和密钥 |
+| **七牛云 Kodo** | 七牛云对象存储（新用户有免费额度） | Bucket 填写控制台中的 S3 空间名（全局唯一），Region 用七牛云 S3 Region ID（如 cn-east-1） |
 
 公共网络上的存储服务建议使用 HTTPS。MinIO 在本机或可信内网中可以使用 HTTP。
 
@@ -152,7 +153,7 @@ WebDAV 目标目录不存在时，保存连接或首次同步会自动创建该�
 - 快照、历史和源码归档可使用 AES-256-GCM 客户端加密；每个对象使用新的 KDF salt。
 - 密码和派生密钥不会写入明文设置文件；Windows 使用当前用户 DPAPI 保护已保存凭据。
 - 恢复前自动备份当前 profile，源码归档恢复会做 SHA-256 校验并拒绝路径穿越。
-- 加密保护的是远端内容，不替代对象存储本身的权限控制；请为 Bucket、Endpoint 和 MinIO 管理员账号配置最小权限。
+- 加密保护的是远端内容，不替代对象存储本身的权限控制；请为 Bucket、Endpoint 以及 MinIO / Kodo 管理员账号配置最小权限。
 
 ## GitHub 自更新
 
@@ -198,7 +199,7 @@ docs/screenshots/  README 界面截图
 
 **没有 WebDAV，也能检查插件更新吗？**
 
-可以。插件更新来自 GitHub Releases，与同步渠道完全独立；WebDAV、S3、OSS、COS、MinIO 只负责你的配置快照和源码归档。
+可以。插件更新来自 GitHub Releases，与同步渠道完全独立；WebDAV、S3、OSS、COS、MinIO 和七牛云 Kodo 只负责你的配置快照和源码归档。
 
 **会不会复制整个 `node_modules`？**
 
