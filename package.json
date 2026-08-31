@@ -1,6 +1,6 @@
 {
   "name": "@dickpy/dsh-cloud-sync",
-  "version": "0.20.7",
+  "version": "0.20.8",
   "description": "Portable DeepSeek Harness profile and local-plugin source synchronization.",
   "type": "module",
   "main": "lib/index.js",
@@ -15,7 +15,10 @@
       "patch": "./cordis.patch.yml"
     },
     "client": {
-      "inject": ["@deepseek-ai/dsh-client-runtime"],
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale"
+      ],
       "platform": "web",
       "immediately": true
     }
@@ -32,6 +35,6 @@
   "license": "MIT",
   "scripts": {
     "check": "node --check lib/index.js && node --check lib/core.js && node --check lib/client.js",
-    "test": "node test/core.test.mjs"
+    "test": "node test/core.test.mjs && node test/client-locale.test.mjs"
   }
 }
