@@ -35,7 +35,7 @@ It **never** copies sessions, attachments, pnpm cache, `node_modules`, or creden
 | 🔐 **GitHub device authorization** | Copy a device code, authorize in GitHub, and let Cloud Sync create its managed secret Gist |
 | 🔗 **Source auto-archiving** | Local-plugin source archives automatically captured from reachable `file:` / `link:` dependencies during Sync |
 | 🔒 **Client-side encryption** | Optional AES-256-GCM encryption; each object carries a fresh KDF salt; passphrase never written to disk |
-| 🕘 **History & rollback** | Every successful sync records a dated snapshot (latest 30 retained remotely) with one-click rollback |
+| 🕘 **History & rollback** | Every successful sync records a dated snapshot with one-click rollback; retention is configurable (default 30) and the oldest backups are deleted automatically |
 | 🔀 **Three sync policies** | Smart merge (default), Cloud first, Local first |
 | 🧩 **Plugin lifecycle** | Panel derives plugins from the synced profile; install / uninstall remote-declared plugins |
 | 🔄 **Automatic sync** | Device name + interval from 5 minutes to 24 hours; runs only when changes are detected |

@@ -5,7 +5,7 @@ import { once } from 'node:events'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pollGithubDeviceAuthorization, pullSnapshot, sanitizeCordisPatch, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, startGithubDeviceAuthorization, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption } from '../lib/core.js'
+import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pollGithubDeviceAuthorization, pullSnapshot, sanitizeCordisPatch, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, startGithubDeviceAuthorization, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption, updateSyncPreferences } from '../lib/core.js'
 
 process.env.NODE_ENV = 'test'
 const packageVersion = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version
@@ -316,5 +316,26 @@ try {
   assert.equal((await listSnapshotHistory({ home: gistHome })).length, 30)
   assert.ok(Object.keys(gistFiles).length <= 34)
 } finally { globalThis.fetch = originalFetch }
+
+const limitHome = await mkdtemp(join(tmpdir(), 'dsh-sync-limit-'))
+const limitProfile = join(limitHome, 'profiles', 'web')
+await mkdir(limitProfile, { recursive: true })
+await writeFile(join(limitProfile, 'package.json'), JSON.stringify({ name: 'dsh-profile-limit' }))
+await writeFile(join(limitProfile, 'cordis.patch.yml'), '# limit\n')
+await connectWebDav({ provider: { type: 'webdav', url: `http://127.0.0.1:${port}/DSH-Sync-Limit`, username: 'test', password: 'secret', allowInsecure: true } }, { home: limitHome })
+await assert.rejects(updateSyncPreferences({ historyLimit: 0 }, { home: limitHome }), /between 1 and 200/)
+await updateSyncPreferences({ historyLimit: 3 }, { home: limitHome })
+assert.equal((await getPublicSettings(limitHome)).historyLimit, 3)
+const limitCreated = []
+for (let index = 0; index < 5; index += 1) {
+  await writeFile(join(limitProfile, 'cordis.patch.yml'), `# ${index}\n`)
+  limitCreated.push((await synchronizeSnapshots({ home: limitHome, strategy: 'local' })).createdAt)
+}
+const limitHistory = await listSnapshotHistory({ home: limitHome })
+assert.equal(limitHistory.length, 3)
+assert.deepEqual(limitHistory.map(entry => entry.createdAt), limitCreated.slice(-3).reverse())
+await updateSyncPreferences({ deviceName: 'limit-device' }, { home: limitHome })
+assert.equal((await getPublicSettings(limitHome)).historyLimit, 3)
+assert.equal((await getPublicSettings(limitHome)).autoSync.enabled, false)
 await new Promise(resolve => server.close(resolve))
 console.log('core tests passed')

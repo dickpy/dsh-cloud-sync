@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.20.9 - 2026-09-07
+
+- Add a configurable history retention limit (1-200, default 30). Once the number of history backups exceeds the limit, the oldest ones are deleted from the cloud automatically.
+- Change the limit from the Configuration & history tab in the web UI; the value persists per device across provider switches.
+- `settings/preferences` now keeps the existing auto-sync and sync-scope values when they are not provided in the request.
+
 ## 0.20.7 - 2026-08-20
 
 - Add Qiniu Kodo (七牛云) as an object-storage sync provider via its AWS S3-compatible API. Supports the 10 GB free tier with default region `cn-east-1` and endpoint `https://s3.cn-east-1.qiniucs.com`.
