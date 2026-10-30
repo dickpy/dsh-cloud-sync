@@ -99,6 +99,8 @@ Each provider keeps its own endpoint, region, bucket, prefix, and Access Key ID.
 
 For WebDAV, a missing target directory is created automatically when the connection is saved or the first sync runs, including nested paths and directory names containing spaces or non-ASCII characters. No manual pre-creation is required.
 
+WebDAV requires HTTPS by default. For a home NAS that only supports HTTP, explicitly select **Allow HTTP (trusted network only)** in the connection dialog and enter its `http://` DAV URL. HTTP sends credentials and unencrypted sync content in plain text, so enable it only on a trusted home or private network; use HTTPS for public access. This option is saved with the WebDAV connection.
+
 ## GitHub Gist
 
 GitHub Gist is sufficient for configuration-only sync: profile files, dependencies, lockfiles, marketplace YAML, and history snapshots fit comfortably in one managed secret Gist.
@@ -141,7 +143,7 @@ Provide a passphrase (≥ 8 characters) in the Settings panel to enable:
 
 ## Safety notes
 
-- Use HTTPS for WebDAV, S3, OSS, COS, and Qiniu Kodo. MinIO may use HTTP on localhost or a trusted private network; public deployments should still use HTTPS;
+- Use HTTPS for WebDAV, S3, OSS, COS, and Qiniu Kodo. WebDAV allows HTTP only with the explicit **Allow HTTP** option; MinIO also supports HTTP on localhost or a trusted private network. Public deployments should use HTTPS;
 - Source archives are checksummed before restoration, written under the DSH sync directory, and reject traversal paths;
 - A restore first writes the prior profile files to `~/.dsh/dsh-cloud-sync/backups/`; only the newest ten local backups are retained;
 - On Windows remembered passwords and Secret Access Keys are protected with DPAPI for the current user; on other platforms they are stored in a separate owner-only (`0600`) credentials file; `settings.json` never contains plaintext secrets;
