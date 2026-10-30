@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.20.10 - 2026-10-30
+
+- Support HTTP WebDAV endpoints for home NAS devices through an explicit **Allow HTTP (trusted network only)** option; HTTPS remains required by default (#7, #8).
+- Keep the HTTP opt-in when saving connection profiles, masking credentials, reloading settings, and reconnecting with a stored password. Switching back to HTTPS with the option disabled clears the opt-in.
+- Add Chinese and English plaintext-credentials warnings and setup instructions.
+- Correct the connection-success message to show the selected provider instead of GitHub Gist, and align the client version fallback with the package version.
+- Extend regression coverage for strict opt-in values, rejected protocols, credential masking, and reconnect behavior.
+
 ## 0.20.9 - 2026-09-07
 
 - Add a configurable history retention limit (1-200, default 30). Once the number of history backups exceeds the limit, the oldest ones are deleted from the cloud automatically.

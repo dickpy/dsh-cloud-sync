@@ -86,7 +86,7 @@ dsh plugin --profile web add @dickpy/dsh-cloud-sync
 从 [GitHub Releases](https://github.com/dickpy/dsh-cloud-sync/releases/latest) 下载最新的 `dickpy-dsh-cloud-sync-*.tgz`，然后执行：
 
 ```powershell
-dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.6.tgz
+dsh plugin --profile web add .\dickpy-dsh-cloud-sync-0.20.10.tgz
 ```
 
 适合无法直接访问 npm registry 的内网或离线环境。
