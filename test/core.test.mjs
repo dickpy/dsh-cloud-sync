@@ -5,7 +5,7 @@ import { once } from 'node:events'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pollGithubDeviceAuthorization, pullSnapshot, sanitizeCordisPatch, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, signAwsV4, pushSnapshot, startGithubDeviceAuthorization, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption, updateSyncPreferences } from '../lib/core.js'
+import { checkSelfUpdate, clearSyncProvider, compareVersions, connectProvider, connectWebDav, createSnapshot, ensureProfilePnpmShim, getPublicSettings, getSyncInventory, installConfiguredPlugin, installDependencySpec, listSnapshotHistory, loadSettings, loadRemoteSnapshot, lockedGitSpec, pollGithubDeviceAuthorization, providerFrom, pullSnapshot, sanitizeCordisPatch, sanitizeNpmrc, sanitizePnpmLock, sanitizePnpmWorkspace, saveSettings, signAwsV4, pushSnapshot, startGithubDeviceAuthorization, status, synchronizeSnapshots, uninstallPlugin, unlockEncryption, updateSyncPreferences } from '../lib/core.js'
 
 process.env.NODE_ENV = 'test'
 const packageVersion = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version
@@ -70,6 +70,41 @@ assert.equal(webdavMkcols.includes('dav'), false)
 webdavMissing.add('dav/%E4%BA%91%E5%90%8C%E6%AD%A5/%E6%B5%8B%E8%AF%95%20%E7%9B%AE%E5%BD%95')
 await connectWebDav({ provider: { type: 'webdav', url: `http://127.0.0.1:${port}/dav/%E4%BA%91%E5%90%8C%E6%AD%A5/%E6%B5%8B%E8%AF%95%20%E7%9B%AE%E5%BD%95`, username: 'test', password: 'secret', allowInsecure: true } }, { home: nestedHome })
 assert.deepEqual(webdavMkcols.slice(-1), ['dav/%E4%BA%91%E5%90%8C%E6%AD%A5/%E6%B5%8B%E8%AF%95%20%E7%9B%AE%E5%BD%95'])
+// Plain HTTP is rejected unless "Allow HTTP" is explicitly enabled, so LAN-only NAS servers can connect after the user opts in.
+const insecureHome = await mkdtemp(join(tmpdir(), 'dsh-sync-insecure-'))
+const insecureProvider = { type: 'webdav', url: `http://127.0.0.1:${port}/DSH-Sync`, username: 'test', password: 'secret' }
+const requestsBeforeOptIn = objectStorageRequests.length
+for (const allowInsecure of [undefined, false, 'true', 1]) {
+  const provider = { ...insecureProvider, allowInsecure }
+  await assert.rejects(connectWebDav({ provider }, { home: insecureHome }), /must use HTTPS/)
+  assert.throws(() => providerFrom({ provider }, insecureHome), /must use HTTPS/)
+}
+for (const url of ['ftp://127.0.0.1/DSH-Sync', 'file:///DSH-Sync']) {
+  const provider = { ...insecureProvider, url, allowInsecure: true }
+  await assert.rejects(connectWebDav({ provider }, { home: insecureHome }), /must use HTTPS/)
+  assert.throws(() => providerFrom({ provider }, insecureHome), /must use HTTPS/)
+}
+assert.equal(objectStorageRequests.length, requestsBeforeOptIn)
+const insecureConnected = await connectWebDav({ provider: { ...insecureProvider, allowInsecure: true } }, { home: insecureHome })
+assert.equal(insecureConnected.provider.allowInsecure, true)
+assert.equal(insecureConnected.provider.password, '<stored-locally>')
+assert.equal((await loadSettings(insecureHome)).provider.allowInsecure, true)
+const storedInsecure = JSON.parse(await readFile(join(insecureHome, 'dsh-cloud-sync', 'settings.json'), 'utf8'))
+assert.equal(storedInsecure.provider.allowInsecure, true)
+assert.equal(storedInsecure.provider.password, '<stored-in-credentials>')
+assert.equal(storedInsecure.savedProviders.webdav.allowInsecure, true)
+assert.equal('password' in storedInsecure.savedProviders.webdav, false)
+const disconnectedInsecure = await clearSyncProvider({ home: insecureHome })
+assert.equal(disconnectedInsecure.savedProviders.webdav.allowInsecure, true)
+await connectProvider({ provider: { ...disconnectedInsecure.savedProviders.webdav, password: '' } }, { home: insecureHome })
+assert.equal((await loadSettings(insecureHome)).provider.password, 'secret')
+assert.equal((await getPublicSettings(insecureHome)).provider.allowInsecure, true)
+await assert.rejects(connectWebDav({ provider: { ...insecureProvider, allowInsecure: false } }, { home: insecureHome }), /must use HTTPS/)
+await saveSettings({ provider: { ...insecureProvider, url: 'https://dav.example.invalid/DSH-Sync', password: '', allowInsecure: false } }, insecureHome)
+const secureSettings = await loadSettings(insecureHome)
+assert.equal(secureSettings.provider.allowInsecure, undefined)
+assert.equal(secureSettings.savedProviders.webdav.allowInsecure, undefined)
+assert.doesNotThrow(() => providerFrom(secureSettings, insecureHome))
 const snapshot = await createSnapshot({ home })
 assert.equal(snapshot.snapshot.profiles.length, 1)
 assert.equal(snapshot.snapshot.sources.length, 0)
